@@ -241,9 +241,11 @@ class Plugin(object):
 
         return decorator
 
-    def setDirectoryItems(self, items, content='videos', sortMethods=[]):
+    def setDirectoryItems(self, items, content=None, sortMethods=[]):
         xbmcplugin.addDirectoryItems(self.handle, items)
-        xbmcplugin.setContent(self.handle, content)
+
+        if content:
+            xbmcplugin.setContent(self.handle, content)
 
         for sortMethod in sortMethods:
             xbmcplugin.addSortMethod(self.handle, sortMethod)
