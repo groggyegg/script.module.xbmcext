@@ -123,10 +123,23 @@ class ListItem(xbmcgui.ListItem):
         return super(ListItem, cls).__new__(cls, label, label2, path=path, offscreen=offscreen)
 
     def __init__(self, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=False):
-        self.setArt({'thumb': thumbnailImage, 'poster': posterImage, 'icon': iconImage})
+        super(ListItem, self).setArt({'thumb': thumbnailImage, 'poster': posterImage, 'icon': iconImage})
 
     def addContextMenuItems(self, items, replaceItems=False):
         super(ListItem, self).addContextMenuItems([(getLocalizedString(label) if isinstance(label, int) else label, action) for label, action in items], replaceItems)
+
+    def setArt(self, values):
+        if isinstance(values, str):
+            super(ListItem, self).setArt({'thumb': values,
+                                          'poster': values,
+                                          'banner': values,
+                                          'fanart': values,
+                                          'clearart': values,
+                                          'clearlogo': values,
+                                          'landscape': values,
+                                          'icon': values})
+        else:
+            super(ListItem, self).setArt(values)
 
 
 class NotFoundException(Exception):
@@ -174,7 +187,7 @@ class Plugin(object):
         self.query = dict((name, cast(value)) for name, value in parse_qsl(query))
 
     def __call__(self):
-        xbmc.log('Routing "{}"'.format(self.getFullPath()), xbmc.LOGINFO)
+        xbmc.log('Routing "' + self.getFullPath() + '"', xbmc.LOGINFO)
 
         for pattern, classtypes, function in self.routes:
             match = re.match('^' + pattern + '$', self.path)
