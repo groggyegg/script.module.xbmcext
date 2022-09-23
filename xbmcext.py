@@ -149,26 +149,6 @@ class NotFoundException(Exception):
 
 class Plugin(object):
     def __init__(self):
-        def cast(value):
-            try:
-                value = float(value)
-                return int(value) if value == int(value) else value
-            except ValueError:
-                pass
-
-            if value == str(True):
-                return True
-
-            if value == str(False):
-                return False
-
-            try:
-                return json.loads(value)
-            except ValueError:
-                pass
-
-            return value
-
         self.classtypes = {
             'bool': bool,
             'float': float,
@@ -185,10 +165,16 @@ class Plugin(object):
         self.scheme, self.netloc, path, params, query, fragment = urlparse(sys.argv[0] + sys.argv[2])
         path = path.rstrip('/')
         self.path = path if path else '/'
-        self.query = dict((name, cast(value)) for name, value in parse_qsl(query))
+        self.query = dict((name, self.cast(value)) for name, value in parse_qsl(query))
 
-    def __call__(self):
-        xbmc.log('Routing "' + self.getFullPath() + '"', xbmc.LOGINFO)
+    def __call__(self, argv=None):
+        if argv:
+            self.scheme, self.netloc, path, params, query, fragment = urlparse(argv[0] + argv[2])
+            path = path.rstrip('/')
+            self.path = path if path else '/'
+            self.query = dict((name, self.cast(value)) for name, value in parse_qsl(query))
+
+        xbmc.log('[{0}] Routing "{1}"'.format(getAddonInfo('name'), self.getFullPath()), xbmc.LOGINFO)
 
         for pattern, classtypes, function in self.routes:
             match = re.match('^' + pattern + '$', self.path)
@@ -215,6 +201,27 @@ class Plugin(object):
                         return
 
         raise NotFoundException('A route could not be found in the route collection.')
+
+    @staticmethod
+    def cast(value):
+        try:
+            value = float(value)
+            return int(value) if value == int(value) else value
+        except ValueError:
+            pass
+
+        if value == str(True):
+            return True
+
+        if value == str(False):
+            return False
+
+        try:
+            return json.loads(value)
+        except ValueError:
+            pass
+
+        return value
 
     def getFullPath(self):
         return urlunsplit(('', '', self.path, urlencode(dict((name, json.dumps(value) if isinstance(value, list) else value) for name, value in self.query.items())), ''))
