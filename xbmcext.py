@@ -260,6 +260,7 @@ class Plugin(object):
         if content:
             xbmcplugin.setContent(self.handle, content)
 
+        xbmcplugin.addSortMethod(self.handle, xbmcplugin.SORT_METHOD_UNSORTED)
         for sortMethod in sortMethods:
             xbmcplugin.addSortMethod(self.handle, sortMethod)
 
