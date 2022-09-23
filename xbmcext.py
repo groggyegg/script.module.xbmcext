@@ -280,3 +280,4 @@ def getProfilePath():
 
 getAddonInfo = xbmcaddon.Addon().getAddonInfo
 getLocalizedString = xbmcaddon.Addon().getLocalizedString
+getSettingInt = xbmcaddon.Addon().getSettingInt
