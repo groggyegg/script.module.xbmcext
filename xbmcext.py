@@ -113,7 +113,7 @@ class Dialog(xbmcgui.Dialog):
 
 
 class ListItem(xbmcgui.ListItem):
-    def __new__(cls, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=False):
+    def __new__(cls, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=True):
         if isinstance(label, int):
             label = getLocalizedString(label)
 
@@ -122,7 +122,7 @@ class ListItem(xbmcgui.ListItem):
 
         return super(ListItem, cls).__new__(cls, label, label2, path=path, offscreen=offscreen)
 
-    def __init__(self, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=False):
+    def __init__(self, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=True):
         super(ListItem, self).setArt({'thumb': thumbnailImage, 'poster': posterImage, 'icon': iconImage})
 
     def addContextMenuItems(self, items, replaceItems=False):
