@@ -23,7 +23,6 @@ SOFTWARE.
 """
 
 import copy
-import inspect
 import json
 import os
 import re
@@ -38,9 +37,11 @@ if sys.version_info.major == 2:
     from urllib import urlencode
     from urlparse import parse_qsl, urlparse, urlunsplit
     from xbmc import translatePath
+    from inspect import getargspec as get_arg_spec
 else:
     from urllib.parse import parse_qsl, urlencode, urlparse, urlunsplit
     from xbmcvfs import translatePath
+    from inspect import getfullargspec as get_arg_spec
 
 __all__ = ['Dialog', 'ListItem', 'NotFoundException', 'Plugin', 'getLocalizedString', 'getPath', 'getProfilePath']
 
@@ -199,7 +200,7 @@ class Plugin(object):
                     kwargs[name] = classtype(kwargs[name])
 
                 kwargs.update(copy.deepcopy(self.query))
-                argspec = inspect.getargspec(function)
+                argspec = get_arg_spec(function)
 
                 if argspec.defaults:
                     positional = set(argspec.args[:-len(argspec.defaults)])
