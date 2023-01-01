@@ -8,8 +8,8 @@
 		<license>MIT License</license>
 		<source>https://github.com/groggyegg/script.module.xbmcext</source>
 		<news>v1.3.0 (2023-01-01)
-            [fix] support for getfullargspec instead of deprecated getargspec
-        </news>
+			[fix] support for getfullargspec instead of deprecated getargspec
+		</news>
 		<assets>
 			<icon>resources/icon.png</icon>
 		</assets>
