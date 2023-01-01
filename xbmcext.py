@@ -22,8 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import copy
-import inspect
 import json
 import os
 import re
@@ -35,14 +33,16 @@ import xbmcgui
 import xbmcplugin
 
 if sys.version_info.major == 2:
+    from inspect import getargspec as getfullargspec
     from urllib import urlencode
     from urlparse import parse_qsl, urlparse, urlunsplit
     from xbmc import translatePath
 else:
+    from inspect import getfullargspec
     from urllib.parse import parse_qsl, urlencode, urlparse, urlunsplit
     from xbmcvfs import translatePath
 
-__all__ = ['Dialog', 'ListItem', 'NotFoundException', 'Plugin', 'getLocalizedString', 'getPath', 'getProfilePath']
+__all__ = ['Dialog', 'ListItem', 'NotFoundException', 'Plugin', 'getLocalizedString', 'getPath', 'getProfilePath', 'getSettingString']
 
 
 class Dialog(xbmcgui.Dialog):
@@ -53,6 +53,12 @@ class Dialog(xbmcgui.Dialog):
         ACTION_STOP = 13
         ACTION_NAV_BACK = 92
 
+        DIALOG_TITLE = 1100
+        DIALOG_CONTENT = 1110
+        DIALOG_SUBCONTENT = 1120
+        DIALOG_OK_BUTTON = 1131
+        DIALOG_CLEAR_BUTTON = 1132
+
         selectedItems = {key: [] for key in options.keys()}
 
         class MultiSelectTabDialog(xbmcgui.WindowXMLDialog):
@@ -61,9 +67,9 @@ class Dialog(xbmcgui.Dialog):
                 self.selectedLabel = None
 
             def onInit(self):
-                self.getControl(1100).setLabel(heading)
-                self.getControl(1110).addItems(list(options.keys()))
-                self.setFocusId(1110)
+                self.getControl(DIALOG_TITLE).setLabel(heading)
+                self.getControl(DIALOG_CONTENT).addItems(list(options.keys()))
+                self.setFocusId(DIALOG_CONTENT)
 
             def onAction(self, action):
                 if action.getId() in (ACTION_PREVIOUS_MENU, ACTION_STOP, ACTION_NAV_BACK):
@@ -72,11 +78,8 @@ class Dialog(xbmcgui.Dialog):
                 elif action.getId() in (ACTION_MOVE_UP, ACTION_MOVE_DOWN):
                     self.onSelectedItemChanged(self.getFocusId())
 
-            def onControl(self, control):
-                pass
-
             def onClick(self, controlId):
-                if controlId == 1120:
+                if controlId == DIALOG_SUBCONTENT:
                     control = self.getControl(controlId)
                     selectedItemLabel = options[self.selectedLabel][control.getSelectedPosition()]
 
@@ -85,28 +88,28 @@ class Dialog(xbmcgui.Dialog):
                         selectedItems[self.selectedLabel].remove(selectedItemLabel)
                     else:
                         selectedItems[self.selectedLabel].append(selectedItemLabel)
-                        control.getSelectedItem().setLabel('[COLOR orange]' + selectedItemLabel + '[/COLOR]')
-                elif controlId == 1131:
+                        control.getSelectedItem().setLabel('[COLOR orange]{}[/COLOR]'.format(selectedItemLabel))
+                elif controlId == DIALOG_OK_BUTTON:
                     self.close()
-                elif controlId == 1132:
+                elif controlId == DIALOG_CLEAR_BUTTON:
                     for item in selectedItems.values():
                         item.clear()
 
                     for index in range(len(options[self.selectedLabel])):
-                        self.getControl(1120).getListItem(index).setLabel(options[self.selectedLabel][index])
+                        self.getControl(DIALOG_SUBCONTENT).getListItem(index).setLabel(options[self.selectedLabel][index])
 
             def onFocus(self, controlId):
                 self.onSelectedItemChanged(controlId)
 
             def onSelectedItemChanged(self, controlId):
-                if controlId == 1110:
+                if controlId == DIALOG_CONTENT:
                     selectedLabel = self.getControl(controlId).getSelectedItem().getLabel()
 
                     if self.selectedLabel != selectedLabel:
                         self.selectedLabel = selectedLabel
-                        self.getControl(1120).reset()
-                        self.getControl(1120).addItems(['[COLOR orange]' + item + '[/COLOR]' if item in selectedItems[self.selectedLabel] else item
-                                                        for item in options[self.selectedLabel]])
+                        self.getControl(DIALOG_SUBCONTENT).reset()
+                        self.getControl(DIALOG_SUBCONTENT).addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item in selectedItems[self.selectedLabel] else item
+                                                                     for item in options[self.selectedLabel]])
 
         MultiSelectTabDialog('MultiSelectTabDialog.xml', os.path.dirname(os.path.dirname(__file__)), defaultRes='1080i').doModal()
         return selectedItems if selectedItems else None
@@ -129,17 +132,7 @@ class ListItem(xbmcgui.ListItem):
         super(ListItem, self).addContextMenuItems([(getLocalizedString(label) if isinstance(label, int) else label, action) for label, action in items], replaceItems)
 
     def setArt(self, values):
-        if isinstance(values, str):
-            super(ListItem, self).setArt({'thumb': values,
-                                          'poster': values,
-                                          'banner': values,
-                                          'fanart': values,
-                                          'clearart': values,
-                                          'clearlogo': values,
-                                          'landscape': values,
-                                          'icon': values})
-        else:
-            super(ListItem, self).setArt(values)
+        super(ListItem, self).setArt({label: value for label, value in values.items() if value})
 
 
 class NotFoundException(Exception):
@@ -187,10 +180,10 @@ class Plugin(object):
         self.query = dict((name, cast(value)) for name, value in parse_qsl(query))
 
     def __call__(self):
-        xbmc.log('Routing "' + self.getFullPath() + '"', xbmc.LOGINFO)
+        xbmc.log('[script.module.xbmcext] Routing "{}"'.format(self.getFullPath()), xbmc.LOGINFO)
 
         for pattern, classtypes, function in self.routes:
-            match = re.match('^' + pattern + '$', self.path)
+            match = re.match('^{}$'.format(pattern), self.path)
 
             if match:
                 kwargs = match.groupdict()
@@ -198,8 +191,8 @@ class Plugin(object):
                 for name, classtype in classtypes.items():
                     kwargs[name] = classtype(kwargs[name])
 
-                kwargs.update(copy.deepcopy(self.query))
-                argspec = inspect.getargspec(function)
+                kwargs.update(self.query)
+                argspec = getfullargspec(function)
 
                 if argspec.defaults:
                     positional = set(argspec.args[:-len(argspec.defaults)])
@@ -215,11 +208,23 @@ class Plugin(object):
 
         raise NotFoundException('A route could not be found in the route collection.')
 
+    def addSortMethods(self, sortMethods=[]):
+        for sortMethod in sortMethods:
+            xbmcplugin.addSortMethod(self.handle, sortMethod)
+
     def getFullPath(self):
-        return urlunsplit(('', '', self.path, urlencode(dict((name, json.dumps(value) if isinstance(value, list) else value) for name, value in self.query.items())), ''))
+        return urlunsplit(('',
+                           '',
+                           self.path,
+                           urlencode(dict((name, json.dumps(value) if isinstance(value, list) else value) for name, value in self.query.items())),
+                           ''))
 
     def getUrlFor(self, path, **query):
-        return urlunsplit((self.scheme, self.netloc, path, urlencode(dict((name, json.dumps(value) if isinstance(value, list) else value) for name, value in query.items())), ''))
+        return urlunsplit((self.scheme,
+                           self.netloc,
+                           path,
+                           urlencode(dict((name, json.dumps(value) if isinstance(value, list) else value) for name, value in query.items())),
+                           ''))
 
     def redirect(self, path, **query):
         path = path.rstrip('/')
@@ -242,7 +247,7 @@ class Plugin(object):
 
                 if name:
                     classtypes[name] = self.classtypes[classtype] if classtype else str
-                    path.append('(?P<' + name + '>' + constraint + ')')
+                    path.append('(?P<{}>{})'.format(name, constraint))
                 else:
                     path.append(constraint)
             else:
@@ -254,16 +259,12 @@ class Plugin(object):
 
         return decorator
 
-    def setDirectoryItems(self, items, content=None, sortMethods=[]):
+    def setDirectoryItems(self, items):
         xbmcplugin.addDirectoryItems(self.handle, items)
-
-        if content:
-            xbmcplugin.setContent(self.handle, content)
-
-        for sortMethod in sortMethods:
-            xbmcplugin.addSortMethod(self.handle, sortMethod)
-
         xbmcplugin.endOfDirectory(self.handle)
+
+    def setContent(self, content):
+        xbmcplugin.setContent(self.handle, content)
 
     def setResolvedUrl(self, succeeded, listitem):
         xbmcplugin.setResolvedUrl(self.handle, succeeded, listitem)
@@ -279,3 +280,4 @@ def getProfilePath():
 
 getAddonInfo = xbmcaddon.Addon().getAddonInfo
 getLocalizedString = xbmcaddon.Addon().getLocalizedString
+getSettingString = xbmcaddon.Addon().getSettingString
