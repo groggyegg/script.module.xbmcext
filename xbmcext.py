@@ -108,8 +108,8 @@ class Dialog(xbmcgui.Dialog):
                     if self.selectedLabel != selectedLabel:
                         self.selectedLabel = selectedLabel
                         self.getControl(DIALOG_SUBCONTENT).reset()
-                        self.getControl(DIALOG_SUBCONTENT).addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item in selectedItems[self.selectedLabel] else item
-                                                                     for item in options[self.selectedLabel]])
+                        self.getControl(DIALOG_SUBCONTENT).addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item in selectedItems[self.selectedLabel]
+                                                                     else item for item in options[self.selectedLabel]])
 
         MultiSelectTabDialog('MultiSelectTabDialog.xml', os.path.dirname(os.path.dirname(__file__)), defaultRes='1080i').doModal()
         return selectedItems if selectedItems else None
@@ -129,7 +129,8 @@ class ListItem(xbmcgui.ListItem):
         super(ListItem, self).setArt({'thumb': thumbnailImage, 'poster': posterImage, 'icon': iconImage})
 
     def addContextMenuItems(self, items, replaceItems=False):
-        super(ListItem, self).addContextMenuItems([(getLocalizedString(label) if isinstance(label, int) else label, action) for label, action in items], replaceItems)
+        super(ListItem, self).addContextMenuItems([(getLocalizedString(label) if isinstance(label, int) else label, action)
+                                                   for label, action in items], replaceItems)
 
     def setArt(self, values):
         super(ListItem, self).setArt({label: value for label, value in values.items() if value})
