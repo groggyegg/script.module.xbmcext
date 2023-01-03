@@ -21,4 +21,3 @@ classifiers = [
 
 [project.urls]
 "Homepage" = "https://github.com/groggyegg/script.module.xbmcext"
-"Bug Tracker" = "https://github.com/groggyegg/script.module.xbmcext/issues"
