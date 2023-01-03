@@ -42,8 +42,6 @@ else:
     from urllib.parse import parse_qsl, urlencode, urlparse, urlunsplit
     from xbmcvfs import translatePath
 
-__all__ = ['Dialog', 'ListItem', 'NotFoundException', 'Plugin', 'getLocalizedString', 'getPath', 'getProfilePath', 'getSettingString']
-
 
 class Dialog(xbmcgui.Dialog):
     def multiselecttab(self, heading, options):
@@ -117,20 +115,10 @@ class Dialog(xbmcgui.Dialog):
 
 class ListItem(xbmcgui.ListItem):
     def __new__(cls, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=False):
-        if isinstance(label, int):
-            label = getLocalizedString(label)
-
-        if isinstance(label2, int):
-            label2 = getLocalizedString(label2)
-
         return super(ListItem, cls).__new__(cls, label, label2, path=path, offscreen=offscreen)
 
     def __init__(self, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=False):
-        super(ListItem, self).setArt({'thumb': thumbnailImage, 'poster': posterImage, 'icon': iconImage})
-
-    def addContextMenuItems(self, items, replaceItems=False):
-        super(ListItem, self).addContextMenuItems([(getLocalizedString(label) if isinstance(label, int) else label, action)
-                                                   for label, action in items], replaceItems)
+        self.setArt({'thumb': thumbnailImage, 'poster': posterImage, 'icon': iconImage})
 
     def setArt(self, values):
         super(ListItem, self).setArt({label: value for label, value in values.items() if value})
@@ -141,27 +129,7 @@ class NotFoundException(Exception):
 
 
 class Plugin(object):
-    def __init__(self):
-        def cast(value):
-            try:
-                value = float(value)
-                return int(value) if value == int(value) else value
-            except ValueError:
-                pass
-
-            if value == str(True):
-                return True
-
-            if value == str(False):
-                return False
-
-            try:
-                return json.loads(value)
-            except ValueError:
-                pass
-
-            return value
-
+    def __init__(self, handle=int(sys.argv[1]), url=sys.argv[0] + sys.argv[2]):
         self.classtypes = {
             'bool': bool,
             'float': float,
@@ -173,9 +141,9 @@ class Plugin(object):
             're': lambda pattern: pattern
         }
 
-        self.handle = int(sys.argv[1])
+        self.handle = handle
         self.routes = []
-        self.scheme, self.netloc, path, params, query, fragment = urlparse(sys.argv[0] + sys.argv[2])
+        self.scheme, self.netloc, path, params, query, fragment = urlparse(url)
         path = path.rstrip('/')
         self.path = path if path else '/'
         self.query = dict((name, cast(value)) for name, value in parse_qsl(query))
@@ -269,6 +237,27 @@ class Plugin(object):
 
     def setResolvedUrl(self, succeeded, listitem):
         xbmcplugin.setResolvedUrl(self.handle, succeeded, listitem)
+
+
+def cast(value):
+    try:
+        value = float(value)
+        return int(value) if value == int(value) else value
+    except ValueError:
+        pass
+
+    if value == str(True):
+        return True
+
+    if value == str(False):
+        return False
+
+    try:
+        return json.loads(value)
+    except ValueError:
+        pass
+
+    return value
 
 
 def getPath():
