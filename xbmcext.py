@@ -129,7 +129,7 @@ class NotFoundException(Exception):
 
 
 class Plugin(object):
-    def __init__(self, handle=int(sys.argv[1]), url=sys.argv[0] + sys.argv[2]):
+    def __init__(self, handle=None, url=None):
         self.classtypes = {
             'bool': bool,
             'float': float,
@@ -141,9 +141,9 @@ class Plugin(object):
             're': lambda pattern: pattern
         }
 
-        self.handle = handle
+        self.handle = int(sys.argv[1]) if handle is None else handle
         self.routes = []
-        self.scheme, self.netloc, path, params, query, fragment = urlparse(url)
+        self.scheme, self.netloc, path, params, query, fragment = urlparse(sys.argv[0] + sys.argv[2] if url is None else url)
         path = path.rstrip('/')
         self.path = path if path else '/'
         self.query = dict((name, cast(value)) for name, value in parse_qsl(query))
