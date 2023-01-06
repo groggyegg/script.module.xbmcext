@@ -1,33 +1,64 @@
-from parameterized import parameterized
-from unittest import TestCase
-from unittest.mock import Mock
-from xbmcext import Plugin
+import unittest
+
+import xbmcext
 
 
-class PluginTest(TestCase):
-    @parameterized.expand([
-        ('plugin://plugin.video.example/', None),
-        ('plugin://plugin.video.example/title/tt5180504', 'tt5180504'),
-        ('plugin://plugin.video.example/event/2023', '2023')
-    ])
-    def test_call(self, url, expected):
-        mock = Mock()
-        plugin = Plugin(0, url)
+class PluginTest(unittest.TestCase):
+    def test_classtype(self):
+        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/event/2023')
+
+        @plugin.route('/event/{id:int}')
+        def event(id):
+            self.assertEqual(id, 2023)
+
+        plugin()
+
+    def test_constraint(self):
+        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/video/vi3337078041/')
+
+        @plugin.route(r'/video/{:re("vi\d{10}")}')
+        def video():
+            pass
+
+        plugin()
+
+    def test_literal(self):
+        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/')
 
         @plugin.route('/')
         def home():
-            mock(None)
-
-        @plugin.route(r'/title/{id:re("tt\\d{7}")}')
-        def title(id):
-            mock(id)
-
-        @plugin.route('/event/{id}')
-        def event(id):
-            mock(id)
+            pass
 
         plugin()
-        mock.assert_called_with(expected)
+
+    def test_name(self):
+        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/title/tt5180504')
+
+        @plugin.route(r'/title/{id:re("tt\d{7}")}')
+        def title(id):
+            self.assertEqual(id, 'tt5180504')
+
+        plugin()
+
+    def test_query(self):
+        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/video/search?q="Stranger"')
+
+        @plugin.route('/video/search')
+        def search(q):
+            self.assertEqual(q, 'Stranger')
+
+        plugin()
 
     def test_redirect(self):
-        pass
+        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/')
+
+        @plugin.route('/')
+        def home():
+            pass
+
+        @plugin.route('/video/{videoId}')
+        def video(videoId, listId):
+            self.assertEqual(videoId, 'vi4275684633')
+            self.assertEqual(listId, 53181649)
+
+        plugin.redirect('/video/vi4275684633', listId=53181649)

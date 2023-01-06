@@ -9,13 +9,14 @@ authors = [{ name = "groggyegg", email = "groggyegg@protonmail.com" }]
 description = "XBMCExt extends windows, dialogs, and various control widgets."
 requires-python = ">=2.7"
 dependencies = [
-  "Kodistubs >= 19.0.3"
+    "Kodistubs >= 19.0.3",
+    "six >= 1.16.0"
 ]
 classifiers = [
-  "Programming Language :: Python :: 2.7",
-  "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: MIT License",
-  "Operating System :: OS Independent",
+    "Programming Language :: Python :: 2.7",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
 ]
 
 [project.urls]

@@ -1,7 +1,7 @@
 """
 MIT License
 
-Copyright (c) 2022 groggyegg
+Copyright (c) 2022-2023 groggyegg
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,35 +22,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import inspect
 import json
 import os
 import re
 import sys
 
+import six.moves.urllib.parse as six
 import xbmc
 import xbmcaddon
 import xbmcgui
 import xbmcplugin
+import xbmcvfs
 
 if sys.version_info.major == 2:
-    from inspect import getargspec as getfullargspec
-    from urllib import urlencode
-    from urlparse import parse_qsl, urlparse, urlunsplit
-    from xbmc import translatePath
-else:
-    from inspect import getfullargspec
-    from urllib.parse import parse_qsl, urlencode, urlparse, urlunsplit
-    from xbmcvfs import translatePath
+    inspect.getfullargspec = inspect.getargspec
+    xbmcvfs.translatePath = xbmc.translatePath
 
 
 class Dialog(xbmcgui.Dialog):
     def multiselecttab(self, heading, options):
-        ACTION_MOVE_UP = 3
-        ACTION_MOVE_DOWN = 4
-        ACTION_PREVIOUS_MENU = 10
-        ACTION_STOP = 13
-        ACTION_NAV_BACK = 92
-
         DIALOG_TITLE = 1100
         DIALOG_CONTENT = 1110
         DIALOG_SUBCONTENT = 1120
@@ -70,10 +61,10 @@ class Dialog(xbmcgui.Dialog):
                 self.setFocusId(DIALOG_CONTENT)
 
             def onAction(self, action):
-                if action.getId() in (ACTION_PREVIOUS_MENU, ACTION_STOP, ACTION_NAV_BACK):
+                if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_STOP, xbmcgui.ACTION_NAV_BACK):
                     selectedItems.clear()
                     self.close()
-                elif action.getId() in (ACTION_MOVE_UP, ACTION_MOVE_DOWN):
+                elif action.getId() in (xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
                     self.onSelectedItemChanged(self.getFocusId())
 
             def onClick(self, controlId):
@@ -109,7 +100,9 @@ class Dialog(xbmcgui.Dialog):
                         self.getControl(DIALOG_SUBCONTENT).addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item in selectedItems[self.selectedLabel]
                                                                      else item for item in options[self.selectedLabel]])
 
-        MultiSelectTabDialog('MultiSelectTabDialog.xml', os.path.dirname(os.path.dirname(__file__)), defaultRes='1080i').doModal()
+        dialog = MultiSelectTabDialog('MultiSelectTabDialog.xml', os.path.dirname(os.path.dirname(__file__)), defaultRes='1080i')
+        dialog.doModal()
+        del dialog
         return selectedItems if selectedItems else None
 
 
@@ -143,10 +136,10 @@ class Plugin(object):
 
         self.handle = int(sys.argv[1]) if handle is None else handle
         self.routes = []
-        self.scheme, self.netloc, path, params, query, fragment = urlparse(sys.argv[0] + sys.argv[2] if url is None else url)
+        self.scheme, self.netloc, path, params, query, fragment = six.urlparse(sys.argv[0] + sys.argv[2] if url is None else url)
         path = path.rstrip('/')
         self.path = path if path else '/'
-        self.query = dict((name, cast(value)) for name, value in parse_qsl(query))
+        self.query = {name: json.loads(value) for name, value in six.parse_qsl(query)}
 
     def __call__(self):
         xbmc.log('[script.module.xbmcext] Routing "{}"'.format(self.getFullPath()), xbmc.LOGINFO)
@@ -161,7 +154,7 @@ class Plugin(object):
                     kwargs[name] = classtype(kwargs[name])
 
                 kwargs.update(self.query)
-                argspec = getfullargspec(function)
+                argspec = inspect.getfullargspec(function)
 
                 if argspec.defaults:
                     positional = set(argspec.args[:-len(argspec.defaults)])
@@ -177,23 +170,16 @@ class Plugin(object):
 
         raise NotFoundException('A route could not be found in the route collection.')
 
-    def addSortMethods(self, sortMethods=[]):
-        for sortMethod in sortMethods:
-            xbmcplugin.addSortMethod(self.handle, sortMethod)
+    def addSortMethods(self, sortMethods=None):
+        if sortMethods:
+            for sortMethod in sortMethods:
+                xbmcplugin.addSortMethod(self.handle, sortMethod)
 
     def getFullPath(self):
-        return urlunsplit(('',
-                           '',
-                           self.path,
-                           urlencode(dict((name, json.dumps(value) if isinstance(value, list) else value) for name, value in self.query.items())),
-                           ''))
+        return six.urlunsplit(('', '', self.path, six.urlencode({name: json.dumps(value) for name, value in self.query.items()}), ''))
 
     def getUrlFor(self, path, **query):
-        return urlunsplit((self.scheme,
-                           self.netloc,
-                           path,
-                           urlencode(dict((name, json.dumps(value) if isinstance(value, list) else value) for name, value in query.items())),
-                           ''))
+        return six.urlunsplit((self.scheme, self.netloc, path, six.urlencode({name: json.dumps(value) for name, value in query.items()}), ''))
 
     def redirect(self, path, **query):
         path = path.rstrip('/')
@@ -204,15 +190,15 @@ class Plugin(object):
     def route(self, path):
         classtypes = {}
         path = path.rstrip('/')
-        segments = re.split('/', path if path else '/')
+        segments = (path if path else '/').split('/')
         path = []
 
         for segment in segments:
-            match = re.match(r'^{(\w+?)(?::(\w+?))?(?::(\w+?\(.+?\)))?}$', segment)
+            match = re.match(r'^{(?:(\w+?)(?::(\w+?))?)?(?::(\w+?\(.+?\)))?}$', segment)
 
             if match:
                 name, classtype, constraint = match.groups()
-                constraint = eval(constraint, self.functions) if constraint else '[^/]+'
+                constraint = eval(constraint.replace('\\', '\\\\'), self.functions) if constraint else '[^/]+'
 
                 if name:
                     classtypes[name] = self.classtypes[classtype] if classtype else str
@@ -239,33 +225,12 @@ class Plugin(object):
         xbmcplugin.setResolvedUrl(self.handle, succeeded, listitem)
 
 
-def cast(value):
-    try:
-        value = float(value)
-        return int(value) if value == int(value) else value
-    except ValueError:
-        pass
-
-    if value == str(True):
-        return True
-
-    if value == str(False):
-        return False
-
-    try:
-        return json.loads(value)
-    except ValueError:
-        pass
-
-    return value
-
-
 def getPath():
-    return translatePath(getAddonInfo('path'))
+    return xbmcvfs.translatePath(getAddonInfo('path'))
 
 
 def getProfilePath():
-    return translatePath(getAddonInfo('profile'))
+    return xbmcvfs.translatePath(getAddonInfo('profile'))
 
 
 getAddonInfo = xbmcaddon.Addon().getAddonInfo
