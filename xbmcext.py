@@ -159,10 +159,9 @@ class Plugin(object):
 
         raise NotFoundException('A route could not be found in the route collection.')
 
-    def addSortMethods(self, sortMethods=None):
-        if sortMethods:
-            for sortMethod in sortMethods:
-                xbmcplugin.addSortMethod(self.handle, sortMethod)
+    def addSortMethods(self, sortMethods):
+        for sortMethod in sortMethods:
+            xbmcplugin.addSortMethod(self.handle, sortMethod)
 
     def getFullPath(self):
         return six.urlunsplit(('', '', self.path, six.urlencode({name: json.dumps(value) for name, value in self.query.items()}), ''))
