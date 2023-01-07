@@ -111,10 +111,7 @@ class ListItem(xbmcgui.ListItem):
         return super(ListItem, cls).__new__(cls, label, label2, path=path, offscreen=offscreen)
 
     def __init__(self, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=False):
-        self.setArt({'thumb': thumbnailImage, 'poster': posterImage, 'icon': iconImage})
-
-    def setArt(self, values):
-        super(ListItem, self).setArt({label: value for label, value in values.items() if value})
+        super(ListItem, self).setArt({label: value for label, value in (('thumb', thumbnailImage), ('poster', posterImage), ('icon', iconImage)) if value})
 
 
 class NotFoundException(Exception):
@@ -156,17 +153,9 @@ class Plugin(object):
                 kwargs.update(self.query)
                 argspec = inspect.getfullargspec(function)
 
-                if argspec.defaults:
-                    positional = set(argspec.args[:-len(argspec.defaults)])
-                    keyword = set(argspec.args) - positional
-
-                    if set(kwargs) - keyword == positional:
-                        function(**kwargs)
-                        return
-                else:
-                    if set(kwargs) == set(argspec.args):
-                        function(**kwargs)
-                        return
+                if set(kwargs) == set(argspec.args):
+                    function(**kwargs)
+                    return
 
         raise NotFoundException('A route could not be found in the route collection.')
 
