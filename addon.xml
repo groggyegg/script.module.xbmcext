@@ -10,15 +10,6 @@
         <platform>all</platform>
         <license>MIT License</license>
         <source>https://github.com/groggyegg/script.module.xbmcext</source>
-        <news>v1.3.0 (2023-01-07)
-            - support for getfullargspec
-            - avoid possible memory leak with None in setArt
-            - remove label translation in ListItem
-            - improve logging message
-            - fix escape in routing pattern
-            - split setDirectoryItems into multiple methods
-            - change how queries are parsed
-        </news>
         <assets>
             <icon>resources/icon.png</icon>
         </assets>
