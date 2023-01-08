@@ -126,17 +126,16 @@ class Plugin(object):
             'int': int,
             'str': str
         }
-
         self.functions = {
             're': lambda pattern: pattern
         }
-
         self.handle = int(sys.argv[1]) if handle is None else handle
         self.routes = []
         self.scheme, self.netloc, path, params, query, fragment = six.urlparse(sys.argv[0] + sys.argv[2] if url is None else url)
         path = path.rstrip('/')
         self.path = path if path else '/'
         self.query = {name: json.loads(value) for name, value in six.parse_qsl(query)}
+        self.totalItems = 0
 
     def __call__(self):
         xbmc.log('[script.module.xbmcext] Routing "{}"'.format(self.getFullPath()), xbmc.LOGINFO)
@@ -155,6 +154,10 @@ class Plugin(object):
 
                 if set(kwargs) == set(argspec.args):
                     function(**kwargs)
+
+                    if self.totalItems > 0:
+                        xbmcplugin.endOfDirectory(self.handle)
+
                     return
 
         raise NotFoundException('A route could not be found in the route collection.')
@@ -203,8 +206,8 @@ class Plugin(object):
         return decorator
 
     def setDirectoryItems(self, items):
-        xbmcplugin.addDirectoryItems(self.handle, items)
-        xbmcplugin.endOfDirectory(self.handle)
+        self.totalItems = len(items)
+        xbmcplugin.addDirectoryItems(self.handle, items, self.totalItems)
 
     def setContent(self, content):
         xbmcplugin.setContent(self.handle, content)
