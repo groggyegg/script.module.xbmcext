@@ -5,8 +5,8 @@
     </requires>
     <extension point="xbmc.python.module" library="."/>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en_GB">XBMCExt extends windows, dialogs, and various control widgets.</summary>
-        <description lang="en_GB">XBMCExt extends windows, dialogs, and various control widgets.</description>
+        <summary lang="en_GB">XBMCExt extends utilities, dialogs, and various control widgets.</summary>
+        <description lang="en_GB">XBMCExt extends utilities, dialogs, and various control widgets.</description>
         <platform>all</platform>
         <license>MIT License</license>
         <source>https://github.com/groggyegg/script.module.xbmcext</source>

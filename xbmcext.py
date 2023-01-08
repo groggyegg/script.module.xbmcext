@@ -111,7 +111,7 @@ class ListItem(xbmcgui.ListItem):
         return super(ListItem, cls).__new__(cls, label, label2, path=path, offscreen=offscreen)
 
     def __init__(self, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=False):
-        super(ListItem, self).setArt({label: value for label, value in (('thumb', thumbnailImage), ('poster', posterImage), ('icon', iconImage)) if value})
+        self.setArt({label: value for label, value in (('thumb', thumbnailImage), ('poster', posterImage), ('icon', iconImage)) if value})
 
 
 class NotFoundException(Exception):
@@ -159,7 +159,7 @@ class Plugin(object):
 
         raise NotFoundException('A route could not be found in the route collection.')
 
-    def addSortMethods(self, sortMethods):
+    def addSortMethods(self, *sortMethods):
         for sortMethod in sortMethods:
             xbmcplugin.addSortMethod(self.handle, sortMethod)
 
@@ -214,13 +214,13 @@ class Plugin(object):
 
 
 def getPath():
-    return xbmcvfs.translatePath(getAddonInfo('path'))
+    return xbmcvfs.translatePath(Addon.getAddonInfo('path'))
 
 
 def getProfilePath():
-    return xbmcvfs.translatePath(getAddonInfo('profile'))
+    return xbmcvfs.translatePath(Addon.getAddonInfo('profile'))
 
 
-getAddonInfo = xbmcaddon.Addon().getAddonInfo
-getLocalizedString = xbmcaddon.Addon().getLocalizedString
-getSettingString = xbmcaddon.Addon().getSettingString
+Addon = xbmcaddon.Addon()
+getLocalizedString = Addon.getLocalizedString
+getSettingString = Addon.getSettingString
