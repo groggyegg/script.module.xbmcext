@@ -114,6 +114,28 @@ class ListItem(xbmcgui.ListItem):
         self.setArt({label: value for label, value in (('thumb', thumbnailImage), ('poster', posterImage), ('icon', iconImage)) if value})
 
 
+class Log(object):
+    @staticmethod
+    def debug(msg):
+        xbmc.log(msg, xbmc.LOGDEBUG)
+
+    @staticmethod
+    def error(msg):
+        xbmc.log(msg, xbmc.LOGERROR)
+
+    @staticmethod
+    def fatal(msg):
+        xbmc.log(msg, xbmc.LOGFATAL)
+
+    @staticmethod
+    def info(msg):
+        xbmc.log(msg, xbmc.LOGINFO)
+
+    @staticmethod
+    def warning(msg):
+        xbmc.log(msg, xbmc.LOGWARNING)
+
+
 class NotFoundException(Exception):
     pass
 
