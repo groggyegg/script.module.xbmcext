@@ -238,11 +238,15 @@ class Plugin(object):
         xbmcplugin.setResolvedUrl(self.handle, succeeded, listitem)
 
 
-def getPath():
+def getAddonId():
+    return Addon.getAddonInfo('id')
+
+
+def getAddonPath():
     return xbmcvfs.translatePath(Addon.getAddonInfo('path'))
 
 
-def getProfilePath():
+def getAddonProfilePath():
     return xbmcvfs.translatePath(Addon.getAddonInfo('profile'))
 
 
