@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "xbmcext"
 version = "1.3.0"
 authors = [{ name = "groggyegg", email = "groggyegg@protonmail.com" }]
-description = "XBMCExt extends windows, dialogs, and various control widgets."
+description = "XBMCExt extends utilities, dialogs, and various control widgets."
 requires-python = ">=2.7"
 dependencies = [
     "Kodistubs >= 18.0.0",
