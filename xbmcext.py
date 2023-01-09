@@ -30,6 +30,7 @@ import re
 import sys
 
 import six.moves.urllib.parse as six
+import typing
 import xbmc
 import xbmcaddon
 import xbmcgui
@@ -42,7 +43,21 @@ if sys.version_info.major == 2:
 
 
 class Dialog(xbmcgui.Dialog):
+    """
+    The graphical control element dialog box (also called dialogue box or just dialog) is a small window that communicates information to the user and prompts them for a response.
+    """
+
     def multiselecttab(self, heading, options):
+        """
+        Show a multi-select tab dialog.
+
+        :param heading: Dialog heading
+        :type heading: str
+        :param options: Options to choose from
+        :type options: dict[str, list[str]]
+        :return: Returns the selected items, or None if cancelled.
+        :rtype: dict[str, list[str]] | None
+        """
         DIALOG_TITLE = 1100
         DIALOG_CONTENT = 1110
         DIALOG_SUBCONTENT = 1120
@@ -109,40 +124,116 @@ class Dialog(xbmcgui.Dialog):
 
 class ListItem(xbmcgui.ListItem):
     def __new__(cls, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=False):
+        """
+        The list item control is used for creating item lists in Kodi.
+
+        :param label: The label to display on the item
+        :type label: str
+        :param label2: The label2 of the item
+        :type label2: str
+        :param iconImage: Image filename
+        :type iconImage: str
+        :param thumbnailImage: Image filename
+        :type thumbnailImage: str
+        :param posterImage: Image filename
+        :type posterImage: str
+        :param path: The path for the item
+        :type path: str
+        :param offscreen: If GUI based locks should be avoided. Most of the times listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
+        :type offscreen: bool
+        """
         return super(ListItem, cls).__new__(cls, label, label2, path=path, offscreen=offscreen)
 
     def __init__(self, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=False):
+        """
+        The list item control is used for creating item lists in Kodi.
+
+        :param label: The label to display on the item
+        :type label: str
+        :param label2: The label2 of the item
+        :type label2: str
+        :param iconImage: Image filename
+        :type iconImage: str
+        :param thumbnailImage: Image filename
+        :type thumbnailImage: str
+        :param posterImage: Image filename
+        :type posterImage: str
+        :param path: The path for the item
+        :type path: str
+        :param offscreen: If GUI based locks should be avoided. Most of the times listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
+        :type offscreen: bool
+        """
         self.setArt({label: value for label, value in (('thumb', thumbnailImage), ('poster', posterImage), ('icon', iconImage)) if value})
 
 
 class Log(object):
     @staticmethod
     def debug(msg):
+        """
+        In depth information about the status of Kodi. This information can pretty much only be deciphered by a developer or long time Kodi power user.
+
+        :param msg: Text to output
+        :type msg: str
+        """
         xbmc.log(msg, xbmc.LOGDEBUG)
 
     @staticmethod
     def error(msg):
+        """
+        This event is bad. Something has failed. You likely noticed problems with the application be it skin artifacts, failure of playback a crash, etc.
+
+        :param msg: Text to output
+        :type msg: str
+        """
         xbmc.log(msg, xbmc.LOGERROR)
 
     @staticmethod
     def fatal(msg):
+        """
+        We're screwed. Kodi is about to crash.
+
+        :param msg: Text to output
+        :type msg: str
+        """
         xbmc.log(msg, xbmc.LOGFATAL)
 
     @staticmethod
     def info(msg):
+        """
+        Something has happened. It's not a problem, we just thought you might want to know. Fairly excessive output that most people won't care about.
+
+        :param msg: Text to output
+        :type msg: str
+        """
         xbmc.log(msg, xbmc.LOGINFO)
 
     @staticmethod
     def warning(msg):
+        """
+        Something potentially bad has happened. If Kodi did something you didn't expect, this is probably why. Watch for errors to follow.
+
+        :param msg: Text to output
+        :type msg: str
+        """
         xbmc.log(msg, xbmc.LOGWARNING)
 
 
 class NotFoundException(Exception):
-    pass
+    """
+    Throws an exception when a resource is not found.
+    """
 
 
 class Plugin(object):
     def __init__(self, handle=None, url=None):
+        """
+        This class is responsible for matching incoming request and dispatch those request to the plugins endpoints.
+
+        :param handle: Handle the plugin was started with
+        :type handle: int | None
+        :param url: URL of the entry
+        :type url: str | None
+        """
         self.classtypes = {
             'bool': bool,
             'float': float,
@@ -158,9 +249,11 @@ class Plugin(object):
         path = path.rstrip('/')
         self.path = path if path else '/'
         self.query = {name: json.loads(value) for name, value in six.parse_qsl(query)}
-        self.totalItems = 0
 
     def __call__(self):
+        """
+        Handles incoming request and dispatch to the endpoint.
+        """
         xbmc.log('[script.module.xbmcext] Routing "{}"'.format(self.getFullPath()), xbmc.LOGINFO)
 
         for pattern, classtypes, function in self.routes:
@@ -177,31 +270,87 @@ class Plugin(object):
 
                 if set(kwargs) == set(argspec.args):
                     function(**kwargs)
-
-                    if self.totalItems > 0:
-                        xbmcplugin.endOfDirectory(self.handle)
-
                     return
 
         raise NotFoundException('A route could not be found in the route collection.')
 
+    def addDirectoryItems(self, items):
+        """
+        Callback function to pass directory contents back to Kodi as a list.
+
+        :param items: List of (url, listitem, isFolder) as a tuple to add
+        :type items: list[(str, ListItem, bool)]
+        """
+        xbmcplugin.addDirectoryItems(self.handle, items, len(items))
+
     def addSortMethods(self, *sortMethods):
+        """
+        Adds sorting methods for the media list.
+
+        :param sortMethods: The sorting methods
+        :type sortMethods: SortMethod
+        """
         for sortMethod in sortMethods:
             xbmcplugin.addSortMethod(self.handle, sortMethod)
 
+    def endOfDirectory(self, succeeded=True, updateListing=False, cacheToDisc=True):
+        """
+        Callback function to tell Kodi that the end of the directory listing in a virtualPythonFolder module is reached.
+
+        :param succeeded: True if script completed successfully; otherwise False
+        :type succeeded: bool
+        :param updateListing: True if this folder should update the current listing; otherwise False
+        :type updateListing: bool
+        :param cacheToDisc: True if folder will cache if extended time; otherwise False
+        :type cacheToDisc: bool
+        """
+        xbmcplugin.endOfDirectory(self.handle, succeeded, updateListing, cacheToDisc)
+
     def getFullPath(self):
+        """
+        Returns a relative URL.
+
+        :return: A relative URL
+        :rtype: str
+        """
         return six.urlunsplit(('', '', self.path, six.urlencode({name: json.dumps(value) for name, value in self.query.items()}), ''))
 
     def getUrlFor(self, path, **query):
+        """
+        Returns an absolute URL.
+
+        :param path: The path for combining into a complete URL
+        :type path: str
+        :param query: The query for combining into a complete URL
+        :type query: Any
+        :return: An absolute URL
+        :rtype: str
+        """
         return six.urlunsplit((self.scheme, self.netloc, path, six.urlencode({name: json.dumps(value) for name, value in query.items()}), ''))
 
     def redirect(self, path, **query):
+        """
+        Redirects to a new path.
+
+        :param path: The target path
+        :type path: str
+        :param query: The HTTP query
+        :type query: Any
+        """
         path = path.rstrip('/')
         self.path = path if path else '/'
         self.query = query
         self()
 
     def route(self, path):
+        """
+        Adds a route that matches the specified pattern.
+
+        :param path: The path pattern of the route
+        :type path: str
+        :return: A decorator to the function
+        :rtype: typing.Callable
+        """
         classtypes = {}
         path = path.rstrip('/')
         segments = (path if path else '/').split('/')
@@ -228,18 +377,87 @@ class Plugin(object):
 
         return decorator
 
-    def setDirectoryItems(self, items):
-        self.totalItems = len(items)
-        xbmcplugin.addDirectoryItems(self.handle, items, self.totalItems)
-
     def setContent(self, content):
+        """
+        Sets the plugins content. Available content strings
+
+        - albums
+        - artists
+        - episodes
+        - files
+        - games
+        - images
+        - movies
+        - musicvideos
+        - songs
+        - tvshows
+        - videos
+
+        :param content: Content type (e.g. movies)
+        :type content: str
+        """
         xbmcplugin.setContent(self.handle, content)
 
     def setResolvedUrl(self, succeeded, listitem):
+        """
+        Callback function to tell Kodi that the file plugin has been resolved to a url.
+
+        :param succeeded: True if script completed successfully; otherwise False
+        :type succeeded: bool
+        :param listitem: Item the file plugin resolved to for playback
+        :type listitem: ListItem
+        """
         xbmcplugin.setResolvedUrl(self.handle, succeeded, listitem)
 
 
 class SortMethod(enum.IntEnum):
+    """
+    Sorting methods for the media list.
+
+    :var ALBUM: Sort by the album
+    :var ALBUM_IGNORE_THE: Sort by the album and ignore "The" before
+    :var ARTIST: Sort by the artist
+    :var ARTIST_IGNORE_THE: Sort by the artist and ignore "The" before
+    :var BITRATE: Sort by the bitrate
+    :var CHANNEL: Sort by the channel
+    :var COUNTRY: Sort by the country
+    :var DATE: Sort by the date
+    :var DATEADDED: Sort by the added date
+    :var DATE_TAKEN: Sort by the taken date
+    :var DRIVE_TYPE: Sort by the drive type
+    :var DURATION: Sort by the duration
+    :var EPISODE: Sort by the episode
+    :var FILE: Sort by the file
+    :var FULLPATH: Sort by the full path name
+    :var GENRE: Sort by the genre
+    :var LABEL: Sort by label
+    :var LABEL_IGNORE_FOLDERS: Sort by the label names and ignore related folder names
+    :var LABEL_IGNORE_THE: Sort by the label and ignore "The" before
+    :var LASTPLAYED: Sort by last played date
+    :var LISTENERS: Sort by the listeners
+    :var MPAA_RATING: Sort by the mpaa rating
+    :var NONE: Do not sort
+    :var PLAYCOUNT: Sort by the play count
+    :var PLAYLIST_ORDER: Sort by the playlist order
+    :var PRODUCTIONCODE: Sort by the production code
+    :var PROGRAM_COUNT: Sort by the program count
+    :var SIZE: Sort by the size
+    :var SONG_RATING: Sort by the song rating
+    :var SONG_USER_RATING: Sort by the rating of the user of song
+    :var STUDIO: Sort by the studio
+    :var STUDIO_IGNORE_THE: Sort by the studio and ignore "The" before
+    :var TITLE: Sort by the title
+    :var TITLE_IGNORE_THE: Sort by the title and ignore "The" before
+    :var TRACKNUM: Sort by the track number
+    :var UNSORTED: Use list not sorted
+    :var VIDEO_RATING: Sort by the video rating
+    :var VIDEO_RUNTIME: Sort by video runtime
+    :var VIDEO_SORT_TITLE: Sort by the video sort title
+    :var VIDEO_SORT_TITLE_IGNORE_THE: Sort by the video sort title and ignore "The" before
+    :var VIDEO_TITLE: Sort by the video title
+    :var VIDEO_USER_RATING: Sort by the rating of the user of video
+    :var VIDEO_YEAR: Sort by the year
+    """
     ALBUM = xbmcplugin.SORT_METHOD_ALBUM
     ALBUM_IGNORE_THE = xbmcplugin.SORT_METHOD_ALBUM_IGNORE_THE
     ARTIST = xbmcplugin.SORT_METHOD_ARTIST
@@ -286,14 +504,32 @@ class SortMethod(enum.IntEnum):
 
 
 def getAddonId():
+    """
+    Returns the addon id.
+
+    :return: Addon id
+    :rtype: str
+    """
     return Addon.getAddonInfo('id')
 
 
 def getAddonPath():
+    """
+    Returns the addon path.
+
+    :return: Addon path
+    :rtype: str
+    """
     return xbmcvfs.translatePath(Addon.getAddonInfo('path'))
 
 
 def getAddonProfilePath():
+    """
+    Returns the addon profile path.
+
+    :return: Addon profile path
+    :rtype: str
+    """
     return xbmcvfs.translatePath(Addon.getAddonInfo('profile'))
 
 
