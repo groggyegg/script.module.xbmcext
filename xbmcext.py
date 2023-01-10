@@ -140,9 +140,7 @@ class ListItem(xbmcgui.ListItem):
         :type posterImage: str
         :param path: The path for the item.
         :type path: str
-        :param offscreen: If GUI based locks should be avoided. Most of the times listitems are created offscreen and added later to a container for display
-        (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items
-        (increasing your addon performance).
+        :param offscreen: If GUI based locks should be avoided. Most of the times listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
         :type offscreen: bool
         """
         return super(ListItem, cls).__new__(cls, label, label2, path=path, offscreen=offscreen)
@@ -163,9 +161,7 @@ class ListItem(xbmcgui.ListItem):
         :type posterImage: str
         :param path: The path for the item.
         :type path: str
-        :param offscreen: If GUI based locks should be avoided. Most of the times listitems are created offscreen and added later to a container for display
-        (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items
-        (increasing your addon performance).
+        :param offscreen: If GUI based locks should be avoided. Most of the times listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
         :type offscreen: bool
         """
         self.setArt({label: value for label, value in (('thumb', thumbnailImage), ('poster', posterImage), ('icon', iconImage)) if value})

@@ -13,7 +13,8 @@ class PluginTest(unittest.TestCase):
 
         plugin()
 
-    def test_constraint(self):
+    @staticmethod
+    def test_constraint():
         plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/video/vi3337078041/')
 
         @plugin.route(r'/video/{:re("vi\d{10}")}')
@@ -22,7 +23,8 @@ class PluginTest(unittest.TestCase):
 
         plugin()
 
-    def test_literal(self):
+    @staticmethod
+    def test_literal():
         plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/')
 
         @plugin.route('/')
@@ -40,15 +42,6 @@ class PluginTest(unittest.TestCase):
 
         plugin()
 
-    def test_query(self):
-        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/video/search?q="Stranger"')
-
-        @plugin.route('/video/search')
-        def search(q):
-            self.assertEqual(q, 'Stranger')
-
-        plugin()
-
     def test_redirect(self):
         plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/')
 
@@ -62,3 +55,22 @@ class PluginTest(unittest.TestCase):
             self.assertEqual(listId, 53181649)
 
         plugin.redirect('/video/vi4275684633', listId=53181649)
+
+    def test_query(self):
+        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/video/search?q="Stranger"')
+
+        @plugin.route('/video/search')
+        def search(q):
+            self.assertEqual(q, 'Stranger')
+
+        plugin()
+
+    @staticmethod
+    def test_wildcard():
+        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/pressroom/bio')
+
+        @plugin.route('/pressroom/{}')
+        def pressroom():
+            pass
+
+        plugin()
