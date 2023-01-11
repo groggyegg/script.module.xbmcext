@@ -255,7 +255,7 @@ class Plugin(object):
         """
         Handles incoming request and dispatch to the endpoint.
         """
-        xbmc.log('[script.module.xbmcext] Routing "{}"'.format(self.getFullPath()), xbmc.LOGINFO)
+        Log.info('[script.module.xbmcext] Routing "{}"'.format(self.getFullPath()))
 
         for pattern, classtypes, function in self.routes:
             match = re.match('^{}$'.format(pattern), self.path)
