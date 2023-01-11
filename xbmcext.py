@@ -168,6 +168,10 @@ class ListItem(xbmcgui.ListItem):
 
 
 class Log(object):
+    """
+    Write a string to Kodi's log file and the debug window.
+    """
+
     @staticmethod
     def debug(msg):
         """
