@@ -539,5 +539,8 @@ def getAddonProfilePath():
 
 
 Addon = xbmcaddon.Addon()
+Keyboard = xbmc.Keyboard
+executebuiltin = xbmc.executebuiltin
 getLocalizedString = Addon.getLocalizedString
 getSettingString = Addon.getSettingString
+sleep = xbmc.sleep
