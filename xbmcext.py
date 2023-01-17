@@ -55,7 +55,9 @@ class DateTime(datetime.datetime):
         string, formats -> new DateTime parsed from a string.
 
         :param date_string: A string that contains a date and/or time.
+        :type date_string: str
         :param formats: Formats for matching the string.
+        :type formats: str
         :return: Returns a DateTime, or None if no match.
         :rtype: DateTime | None
         """
