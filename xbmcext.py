@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import datetime
 import enum
 import inspect
 import json
@@ -41,31 +40,6 @@ import xbmcvfs
 if sys.version_info.major == 2:
     inspect.getfullargspec = inspect.getargspec
     xbmcvfs.translatePath = xbmc.translatePath
-
-
-class DateTime(datetime.datetime):
-    """
-    DateTime(year, month, day[, hour[, minute[, second[, microsecond[,tzinfo]]]]])
-    The year, month and day arguments are required. tzinfo may be None, or an instance of a tzinfo subclass. The remaining arguments may be ints.
-    """
-
-    @classmethod
-    def strptime(cls, date_string, *formats):
-        """
-        string, formats -> new DateTime parsed from a string.
-
-        :param date_string: A string that contains a date and/or time.
-        :param formats: Formats for matching the string.
-        :return: Returns a DateTime, or None if no match.
-        :rtype: DateTime | None
-        """
-        for format in formats:
-            try:
-                return super(DateTime, cls).strptime(date_string, format)
-            except ValueError:
-                pass
-
-        return None
 
 
 class Dialog(xbmcgui.Dialog):
