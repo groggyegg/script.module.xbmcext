@@ -274,6 +274,7 @@ class Plugin(object):
                 argspec = inspect.getfullargspec(function)
 
                 if set(kwargs) == set(argspec.args):
+                    Log.info('[script.module.xbmcext] Calling "{}"'.format(function.__name__))
                     function(**kwargs)
                     return
 

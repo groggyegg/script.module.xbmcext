@@ -20,5 +20,10 @@ classifiers = [
     "Operating System :: OS Independent"
 ]
 
+[project.optional-dependencies]
+tests = [
+    "parameterized >= 0.8.1"
+]
+
 [project.urls]
 "Homepage" = "https://github.com/groggyegg/script.module.xbmcext"
