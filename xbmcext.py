@@ -319,9 +319,9 @@ class Plugin(object):
         :return: A relative URL.
         :rtype: str
         """
-        return six.urlunsplit(('', '', self.path, six.urlencode({name: json.dumps(value) for name, value in self.query.items()}), ''))
+        return six.urlunsplit(('', '', self.path, six.urlencode({name: value for name, value in self.query.items()}), ''))
 
-    def getUrlFor(self, path, **query):
+    def getSerializedUrlFor(self, path, **query):
         """
         Returns an absolute URL.
 
