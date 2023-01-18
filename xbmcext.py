@@ -327,7 +327,7 @@ class Plugin(object):
 
         :param path: The path for combining into a complete URL.
         :type path: str
-        :param query: The query for combining into a complete URL.
+        :param query: The query for serialization and combining into a complete URL.
         :type query: Any
         :return: An absolute URL.
         :rtype: str
