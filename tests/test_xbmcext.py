@@ -1,44 +1,53 @@
 import unittest
 
+import parameterized
+
 import xbmcext
 
 
 class PluginTest(unittest.TestCase):
-    def test_classtype(self):
-        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/event/2023')
+    @parameterized.parameterized.expand([
+        ['plugin://plugin.video.example/event/2023'],
+        ['plugin://plugin.video.example/video/vi3337078041/'],
+        ['plugin://plugin.video.example/'],
+        ['plugin://plugin.video.example/title/tt5180504'],
+        ['plugin://plugin.video.example/video/search'],
+        ['plugin://plugin.video.example/video/search?q="Stranger"'],
+        ['plugin://plugin.video.example/pressroom/bio']
+    ])
+    def test_call(self, url):
+        plugin = xbmcext.Plugin(0, url)
 
         @plugin.route('/event/{id:int}')
         def event(id):
+            self.assertEqual(url, 'plugin://plugin.video.example/event/2023')
             self.assertEqual(id, 2023)
-
-        plugin()
-
-    @staticmethod
-    def test_constraint():
-        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/video/vi3337078041/')
 
         @plugin.route(r'/video/{:re("vi\d{10}")}')
         def video():
-            pass
-
-        plugin()
-
-    @staticmethod
-    def test_literal():
-        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/')
+            self.assertEqual(url, 'plugin://plugin.video.example/video/vi3337078041/')
 
         @plugin.route('/')
         def home():
-            pass
-
-        plugin()
-
-    def test_name(self):
-        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/title/tt5180504')
+            self.assertEqual(url, 'plugin://plugin.video.example/')
 
         @plugin.route(r'/title/{id:re("tt\d{7}")}')
         def title(id):
+            self.assertEqual(url, 'plugin://plugin.video.example/title/tt5180504')
             self.assertEqual(id, 'tt5180504')
+
+        @plugin.route('/video/search')
+        def search():
+            self.assertEqual(url, 'plugin://plugin.video.example/video/search')
+
+        @plugin.route('/video/search')
+        def search(q):
+            self.assertEqual(url, 'plugin://plugin.video.example/video/search?q="Stranger"')
+            self.assertEqual(q, 'Stranger')
+
+        @plugin.route('/pressroom/{}')
+        def pressroom():
+            self.assertEqual(url, 'plugin://plugin.video.example/pressroom/bio')
 
         plugin()
 
@@ -55,22 +64,3 @@ class PluginTest(unittest.TestCase):
             self.assertEqual(listId, 53181649)
 
         plugin.redirect('/video/vi4275684633', listId=53181649)
-
-    def test_query(self):
-        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/video/search?q="Stranger"')
-
-        @plugin.route('/video/search')
-        def search(q):
-            self.assertEqual(q, 'Stranger')
-
-        plugin()
-
-    @staticmethod
-    def test_wildcard():
-        plugin = xbmcext.Plugin(0, 'plugin://plugin.video.example/pressroom/bio')
-
-        @plugin.route('/pressroom/{}')
-        def pressroom():
-            pass
-
-        plugin()
