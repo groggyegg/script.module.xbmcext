@@ -325,13 +325,15 @@ class Plugin(object):
         """
         Returns an absolute URL.
 
-        :param path: The path for combining into a complete URL.
+        :param path: The path for combining into a complete URL. Accepts any query found in path.
         :type path: str
         :param query: The query for serialization and combining into a complete URL.
         :type query: Any
         :return: An absolute URL.
         :rtype: str
         """
+        scheme, netloc, path, params, querystring, fragment = six.urlparse(path)
+        query.update(six.parse_qsl(querystring))
         return six.urlunsplit((self.scheme, self.netloc, path, six.urlencode({name: json.dumps(value) for name, value in query.items()}), ''))
 
     def redirect(self, path, **query):
