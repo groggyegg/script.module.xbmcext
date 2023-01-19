@@ -321,6 +321,15 @@ class Plugin(object):
         """
         return six.urlunsplit(('', '', self.path, six.urlencode(self.query), ''))
 
+    def getSerializedFullPath(self):
+        """
+        Returns a relative URL.
+
+        :return: A relative URL.
+        :rtype: str
+        """
+        return six.urlunsplit(('', '', self.path, six.urlencode({name: json.dumps(value) for name, value in self.query.items()}), ''))
+
     def getSerializedUrlFor(self, path, **query):
         """
         Returns an absolute URL.
