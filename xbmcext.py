@@ -345,6 +345,21 @@ class Plugin(object):
         query.update(six.parse_qsl(querystring))
         return six.urlunsplit((self.scheme, self.netloc, path, six.urlencode({name: json.dumps(value) for name, value in query.items()}), ''))
 
+    def getUrlFor(self, path, **query):
+        """
+        Returns an absolute URL.
+
+        :param path: The path for combining into a complete URL. Accepts any query found in path.
+        :type path: str
+        :param query: The query for combining into a complete URL.
+        :type query: Any
+        :return: An absolute URL.
+        :rtype: str
+        """
+        scheme, netloc, path, params, querystring, fragment = six.urlparse(path)
+        query.update(six.parse_qsl(querystring))
+        return six.urlunsplit((self.scheme, self.netloc, path, six.urlencode(query), ''))
+
     def redirect(self, path, **query):
         """
         Redirects to a new path.
