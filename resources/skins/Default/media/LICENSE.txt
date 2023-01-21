@@ -7,4 +7,3 @@ You can find the license details here: <http://creativecommons.org/licenses/by-s
 Estuary code work is licensed under
 GNU General Public License (GPL), Version 2.0
 You can find the license details here: <https://www.gnu.org/licenses/gpl-2.0>.
-
