@@ -30,7 +30,6 @@ import re
 import sys
 
 import six.moves.urllib.parse as six
-import typing
 import xbmc
 import xbmcaddon
 import xbmcgui

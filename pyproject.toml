@@ -9,7 +9,6 @@ authors = [{ name = "groggyegg", email = "groggyegg@protonmail.com" }]
 description = "XBMCExt extends utilities, dialogs, and various control widgets."
 requires-python = ">=2.7"
 dependencies = [
-    "enum34 >= 1.1.10",
     "Kodistubs >= 18.0.0",
     "six >= 1.16.0"
 ]
