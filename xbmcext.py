@@ -178,9 +178,9 @@ class Log(object):
         In depth information about the status of Kodi. This information can pretty much only be deciphered by a developer or long time Kodi power user.
 
         :param msg: Text to output.
-        :type msg: str
+        :type msg: object
         """
-        xbmc.log(msg, xbmc.LOGDEBUG)
+        xbmc.log(str(msg), xbmc.LOGDEBUG)
 
     @staticmethod
     def error(msg):
@@ -188,9 +188,9 @@ class Log(object):
         This event is bad. Something has failed. You likely noticed problems with the application be it skin artifacts, failure of playback a crash, etc.
 
         :param msg: Text to output.
-        :type msg: str
+        :type msg: object
         """
-        xbmc.log(msg, xbmc.LOGERROR)
+        xbmc.log(str(msg), xbmc.LOGERROR)
 
     @staticmethod
     def fatal(msg):
@@ -198,9 +198,9 @@ class Log(object):
         We're screwed. Kodi is about to crash.
 
         :param msg: Text to output.
-        :type msg: str
+        :type msg: object
         """
-        xbmc.log(msg, xbmc.LOGFATAL)
+        xbmc.log(str(msg), xbmc.LOGFATAL)
 
     @staticmethod
     def info(msg):
@@ -208,9 +208,9 @@ class Log(object):
         Something has happened. It's not a problem, we just thought you might want to know. Fairly excessive output that most people won't care about.
 
         :param msg: Text to output.
-        :type msg: str
+        :type msg: object
         """
-        xbmc.log(msg, xbmc.LOGINFO)
+        xbmc.log(str(msg), xbmc.LOGINFO)
 
     @staticmethod
     def warning(msg):
@@ -218,9 +218,9 @@ class Log(object):
         Something potentially bad has happened. If Kodi did something you didn't expect, this is probably why. Watch for errors to follow.
 
         :param msg: Text to output.
-        :type msg: str
+        :type msg: object
         """
-        xbmc.log(msg, xbmc.LOGWARNING)
+        xbmc.log(str(msg), xbmc.LOGWARNING)
 
 
 class NotFoundException(Exception):
