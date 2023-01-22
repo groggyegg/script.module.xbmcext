@@ -85,38 +85,129 @@ class Dialog(xbmcgui.Dialog):
 
             def onClick(self, controlId):
                 if controlId == DIALOG_SUBCONTENT:
-                    control = self.getControl(controlId)
+                    control = self.getControl(DIALOG_SUBCONTENT)
                     selectedItemLabel = options[self.selectedLabel][control.getSelectedPosition()]
 
                     if selectedItemLabel in selectedItems[self.selectedLabel]:
                         control.getSelectedItem().setLabel(selectedItemLabel)
                         selectedItems[self.selectedLabel].remove(selectedItemLabel)
                     else:
-                        selectedItems[self.selectedLabel].append(selectedItemLabel)
                         control.getSelectedItem().setLabel('[COLOR orange]{}[/COLOR]'.format(selectedItemLabel))
+                        selectedItems[self.selectedLabel].append(selectedItemLabel)
                 elif controlId == DIALOG_OK_BUTTON:
                     self.close()
                 elif controlId == DIALOG_CLEAR_BUTTON:
                     for item in selectedItems.values():
                         item.clear()
 
-                    for index in range(len(options[self.selectedLabel])):
-                        self.getControl(DIALOG_SUBCONTENT).getListItem(index).setLabel(options[self.selectedLabel][index])
+                    control = self.getControl(DIALOG_SUBCONTENT)
+                    selectedList = options[self.selectedLabel]
+
+                    for index in range(len(selectedList)):
+                        control.getListItem(index).setLabel(selectedList[index])
 
             def onFocus(self, controlId):
                 self.onSelectedItemChanged(controlId)
 
             def onSelectedItemChanged(self, controlId):
                 if controlId == DIALOG_CONTENT:
-                    selectedLabel = self.getControl(controlId).getSelectedItem().getLabel()
+                    selectedLabel = self.getControl(DIALOG_CONTENT).getSelectedItem().getLabel()
 
                     if self.selectedLabel != selectedLabel:
                         self.selectedLabel = selectedLabel
-                        self.getControl(DIALOG_SUBCONTENT).reset()
-                        self.getControl(DIALOG_SUBCONTENT).addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item in selectedItems[self.selectedLabel]
-                                                                     else item for item in options[self.selectedLabel]])
+                        control = self.getControl(DIALOG_SUBCONTENT)
+                        control.reset()
+                        control.addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item in selectedItems[self.selectedLabel] else item
+                                          for item in options[self.selectedLabel]])
 
         dialog = MultiSelectTabDialog('MultiSelectTabDialog.xml', os.path.dirname(os.path.dirname(__file__)), defaultRes='1080i')
+        dialog.doModal()
+        del dialog
+        return selectedItems if selectedItems else None
+
+    def selecttab(self, heading, options, preselect=None):
+        """
+        Show a select tab dialog.
+
+        :param heading: Dialog heading.
+        :type heading: str
+        :param options: Options to choose from.
+        :type options: dict[str, list[str]]
+        :param preselect: Indexes of items to preselect in list.
+        :type preselect: dict[str, str] | None
+        :return: Returns the selected items, or None if cancelled.
+        :rtype: dict[str, str] | None
+        """
+        DIALOG_TITLE = 1100
+        DIALOG_CONTENT = 1110
+        DIALOG_SUBCONTENT = 1120
+        DIALOG_OK_BUTTON = 1131
+        DIALOG_CLEAR_BUTTON = 1132
+
+        if preselect is None:
+            preselect = {}
+
+        selectedItems = dict(preselect)
+
+        class SelectTabDialog(xbmcgui.WindowXMLDialog):
+            def __init__(self, xmlFilename, scriptPath, defaultSkin='Default', defaultRes='720p'):
+                super(SelectTabDialog, self).__init__(xmlFilename, scriptPath, defaultSkin, defaultRes)
+                self.selectedLabel = None
+
+            def onInit(self):
+                self.getControl(DIALOG_TITLE).setLabel(heading)
+                self.getControl(DIALOG_CONTENT).addItems(list(options.keys()))
+                self.getControl(DIALOG_OK_BUTTON).setEnabled(len(selectedItems) == len(options))
+                self.setFocusId(DIALOG_CONTENT)
+
+            def onAction(self, action):
+                if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_STOP, xbmcgui.ACTION_NAV_BACK):
+                    selectedItems.clear()
+                    self.close()
+                elif action.getId() in (xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
+                    self.onSelectedItemChanged(self.getFocusId())
+
+            def onClick(self, controlId):
+                if controlId == DIALOG_SUBCONTENT:
+                    self.onListItemClick(self.getControl(DIALOG_SUBCONTENT).getSelectedPosition())
+                elif controlId == DIALOG_OK_BUTTON:
+                    self.close()
+                elif controlId == DIALOG_CLEAR_BUTTON:
+                    selectedItems.clear()
+                    selectedItems.update(preselect)
+                    selectedItemIndex = options[self.selectedLabel].index(selectedItems[self.selectedLabel]) if self.selectedLabel in selectedItems else -1
+                    self.onListItemClick(selectedItemIndex)
+
+            def onFocus(self, controlId):
+                self.onSelectedItemChanged(controlId)
+
+            def onListItemClick(self, selectedItemIndex):
+                control = self.getControl(DIALOG_SUBCONTENT)
+                selectedList = options[self.selectedLabel]
+
+                for index in range(len(selectedList)):
+                    label = selectedList[index]
+
+                    if index == selectedItemIndex:
+                        control.getListItem(index).setLabel('[COLOR orange]{}[/COLOR]'.format(label))
+                        selectedItems[self.selectedLabel] = label
+                    else:
+                        control.getListItem(index).setLabel(label)
+
+                self.getControl(DIALOG_OK_BUTTON).setEnabled(len(selectedItems) == len(options))
+
+            def onSelectedItemChanged(self, controlId):
+                if controlId == DIALOG_CONTENT:
+                    selectedLabel = self.getControl(DIALOG_CONTENT).getSelectedItem().getLabel()
+
+                    if self.selectedLabel != selectedLabel:
+                        self.selectedLabel = selectedLabel
+                        control = self.getControl(DIALOG_SUBCONTENT)
+                        control.reset()
+                        control.addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item == selectedItems[self.selectedLabel] else item
+                                          for item in options[self.selectedLabel]])
+
+        dialog = SelectTabDialog('MultiSelectTabDialog.xml', os.path.dirname(os.path.dirname(__file__)), defaultRes='1080i')
         dialog.doModal()
         del dialog
         return selectedItems if selectedItems else None
