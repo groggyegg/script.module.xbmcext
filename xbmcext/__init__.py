@@ -329,15 +329,12 @@ class Plugin(object):
         :param url: URL of the entry.
         :type url: str | None
         """
-        self.classtypes = {
+        self.converters = {
             'atoi': lambda string: int(re.search('\\d+', string).group()),
             'bool': bool,
             'float': float,
             'int': int,
             'str': str
-        }
-        self.functions = {
-            're': lambda pattern: pattern
         }
         self.handle = int(sys.argv[1]) if handle is None else handle
         self.routes = []
@@ -352,14 +349,14 @@ class Plugin(object):
         """
         Log.info('[script.module.xbmcext] Routing "{}"'.format(self.getFullPath()))
 
-        for pattern, classtypes, function in self.routes:
+        for pattern, converters, function in self.routes:
             match = re.match('^{}$'.format(pattern), self.path)
 
             if match:
                 kwargs = match.groupdict()
 
-                for name, classtype in classtypes.items():
-                    kwargs[name] = classtype(kwargs[name])
+                for name, converter in converters.items():
+                    kwargs[name] = converter(kwargs[name])
 
                 kwargs.update(self.query)
                 argspec = inspect.getfullargspec(function)
@@ -474,20 +471,22 @@ class Plugin(object):
         :return: A decorator to the function.
         :rtype: typing.Callable
         """
-        classtypes = {}
+        converters = {}
         path = path.rstrip('/')
         segments = (path if path else '/').split('/')
         path = []
 
         for segment in segments:
-            match = re.match(r'^{(?:(\w+?)(?::(\w+?))?)?(?::(\w+?\(.+?\)))?}$', segment)
+            match = re.match(r'^{(?:(\w+?)(?::(\w+?))?)?(?::re\("(.+?)"\))?}$', segment)
 
             if match:
-                name, classtype, constraint = match.groups()
-                constraint = eval(constraint.replace('\\', '\\\\'), self.functions) if constraint else '[^/]+'
+                name, converter, constraint = match.groups()
+
+                if constraint is None:
+                    constraint = '[^/]+'
 
                 if name:
-                    classtypes[name] = self.classtypes[classtype] if classtype else str
+                    converters[name] = self.converters[converter] if converter else str
                     path.append('(?P<{}>{})'.format(name, constraint))
                 else:
                     path.append(constraint)
@@ -495,7 +494,7 @@ class Plugin(object):
                 path.append(re.escape(segment))
 
         def decorator(function):
-            self.routes.append(('/'.join(path), classtypes, function))
+            self.routes.append(('/'.join(path), converters, function))
             return function
 
         return decorator
