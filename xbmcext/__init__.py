@@ -330,6 +330,7 @@ class Plugin(object):
         :type url: str | None
         """
         self.classtypes = {
+            'atoi': lambda string: int(re.search('\\d+', string).group()),
             'bool': bool,
             'float': float,
             'int': int,
