@@ -41,6 +41,60 @@ if sys.version_info.major == 2:
     xbmcvfs.translatePath = xbmc.translatePath
 
 
+class Addon(xbmcaddon.Addon):
+    """
+    Offers classes and functions that manipulate the add-on settings, information and localization.
+    """
+
+    def getAddonId(self):
+        """
+        Returns the addon id.
+
+        :return: Addon id.
+        :rtype: str
+        """
+        return self.getAddonInfo('id')
+
+    def getAddonPath(self):
+        """
+        Returns the addon path.
+
+        :return: Addon path.
+        :rtype: str
+        """
+        return xbmcvfs.translatePath(self.getAddonInfo('path'))
+
+    def getAddonProfilePath(self):
+        """
+        Returns the addon profile path.
+
+        :return: Addon profile path.
+        :rtype: str
+        """
+        return xbmcvfs.translatePath(self.getAddonInfo('profile'))
+
+    def getLanguageResource(self, id):
+        """
+        Returns the addon language resource.
+
+        :param id: Country code.
+        :type id: str
+        :rtype: dict[int, str]
+        """
+        path = os.path.join(self.getAddonPath(), 'resources/language/resource.language.{}/strings.po'.format(id))
+
+        if not os.path.exists(path):
+            return None
+
+        language = {}
+
+        with open(path) as io:
+            for msgctxt, msgid, msgstr in re.finditer(r'msgctxt "#(\d+)"\nmsgid "([^"]+)"\nmsgstr "([^"]*)"', io.read()):
+                language[int(msgctxt)] = msgstr if msgstr else msgid
+
+        return language
+
+
 class Dialog(xbmcgui.Dialog):
     """
     The graphical control element dialog box (also called dialogue box or just dialog) is a small window that communicates information to the user and prompts
@@ -230,7 +284,7 @@ class ListItem(xbmcgui.ListItem):
         :type posterImage: str
         :param path: The path for the item.
         :type path: str
-        :param offscreen: If GUI based locks should be avoided. Most of the times listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
+        :param offscreen: If GUI based locks should be avoided. Most of the time listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
         :type offscreen: bool
         """
         return super(ListItem, cls).__new__(cls, label, label2, path=path, offscreen=offscreen)
@@ -375,7 +429,14 @@ class Plugin(object):
         :param items: List of (url, listitem, isFolder) as a tuple to add.
         :type items: list[(str, ListItem, bool)]
         """
-        xbmcplugin.addDirectoryItems(self.handle, items, len(items))
+        listitems = []
+
+        for url, listitem, isFolder in items:
+            scheme, netloc, path, params, query, fragment = six.urlparse(url)
+            url = six.urlunsplit((scheme, netloc, path, six.urlencode({name: json.dumps(value) for name, value in six.parse_qsl(query)}), ''))
+            listitems.append((url, listitem, isFolder))
+
+        xbmcplugin.addDirectoryItems(self.handle, listitems, len(listitems))
 
     def addSortMethods(self, *sortMethods):
         """
@@ -408,30 +469,6 @@ class Plugin(object):
         :rtype: str
         """
         return six.urlunsplit(('', '', self.path, six.urlencode(self.query), ''))
-
-    def getSerializedFullPath(self):
-        """
-        Returns a relative URL.
-
-        :return: A relative URL.
-        :rtype: str
-        """
-        return six.urlunsplit(('', '', self.path, six.urlencode({name: json.dumps(value) for name, value in self.query.items()}), ''))
-
-    def getSerializedUrlFor(self, path, **query):
-        """
-        Returns an absolute URL.
-
-        :param path: The path for combining into a complete URL. Accepts any query found in path.
-        :type path: str
-        :param query: The query for serialization and combining into a complete URL.
-        :type query: Any
-        :return: An absolute URL.
-        :rtype: str
-        """
-        scheme, netloc, path, params, querystring, fragment = six.urlparse(path)
-        query.update(six.parse_qsl(querystring))
-        return six.urlunsplit((self.scheme, self.netloc, path, six.urlencode({name: json.dumps(value) for name, value in query.items()}), ''))
 
     def getUrlFor(self, path, **query):
         """
@@ -625,39 +662,6 @@ class SortMethod(enum.IntEnum):
     VIDEO_YEAR = xbmcplugin.SORT_METHOD_VIDEO_YEAR
 
 
-def getAddonId():
-    """
-    Returns the addon id.
-
-    :return: Addon id.
-    :rtype: str
-    """
-    return Addon.getAddonInfo('id')
-
-
-def getAddonPath():
-    """
-    Returns the addon path.
-
-    :return: Addon path.
-    :rtype: str
-    """
-    return xbmcvfs.translatePath(Addon.getAddonInfo('path'))
-
-
-def getAddonProfilePath():
-    """
-    Returns the addon profile path.
-
-    :return: Addon profile path.
-    :rtype: str
-    """
-    return xbmcvfs.translatePath(Addon.getAddonInfo('profile'))
-
-
-Addon = xbmcaddon.Addon()
 Keyboard = xbmc.Keyboard
 executebuiltin = xbmc.executebuiltin
-getLocalizedString = Addon.getLocalizedString
-getSettingString = Addon.getSettingString
 sleep = xbmc.sleep
