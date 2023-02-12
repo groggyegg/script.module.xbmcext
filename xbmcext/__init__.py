@@ -305,7 +305,7 @@ class ListItem(xbmcgui.ListItem):
         :type posterImage: str
         :param path: The path for the item.
         :type path: str
-        :param offscreen: If GUI based locks should be avoided. Most of the times listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
+        :param offscreen: If GUI based locks should be avoided. Most of the time listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
         :type offscreen: bool
         """
         self.setArt({label: value for label, value in (('thumb', thumbnailImage), ('poster', posterImage), ('icon', iconImage)) if value})
@@ -429,14 +429,7 @@ class Plugin(object):
         :param items: List of (url, listitem, isFolder) as a tuple to add.
         :type items: list[(str, ListItem, bool)]
         """
-        listitems = []
-
-        for url, listitem, isFolder in items:
-            scheme, netloc, path, params, query, fragment = six.urlparse(url)
-            url = six.urlunsplit((scheme, netloc, path, six.urlencode({name: json.dumps(value) for name, value in six.parse_qsl(query)}), ''))
-            listitems.append((url, listitem, isFolder))
-
-        xbmcplugin.addDirectoryItems(self.handle, listitems, len(listitems))
+        xbmcplugin.addDirectoryItems(self.handle, items, len(items))
 
     def addSortMethods(self, *sortMethods):
         """
@@ -469,6 +462,30 @@ class Plugin(object):
         :rtype: str
         """
         return six.urlunsplit(('', '', self.path, six.urlencode(self.query), ''))
+
+    def getSerializedFullPath(self):
+        """
+        Returns a relative URL.
+
+        :return: A relative URL.
+        :rtype: str
+        """
+        return six.urlunsplit(('', '', self.path, six.urlencode({name: json.dumps(value) for name, value in self.query.items()}), ''))
+
+    def getSerializedUrlFor(self, path, **query):
+        """
+        Returns an absolute URL.
+
+        :param path: The path for combining into a complete URL. Accepts any query found in path.
+        :type path: str
+        :param query: The query for serialization and combining into a complete URL.
+        :type query: Any
+        :return: An absolute URL.
+        :rtype: str
+        """
+        scheme, netloc, path, params, querystring, fragment = six.urlparse(path)
+        query.update(six.parse_qsl(querystring))
+        return six.urlunsplit((self.scheme, self.netloc, path, six.urlencode({name: json.dumps(value) for name, value in query.items()}), ''))
 
     def getUrlFor(self, path, **query):
         """
