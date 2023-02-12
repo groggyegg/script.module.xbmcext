@@ -86,13 +86,13 @@ class Addon(xbmcaddon.Addon):
         if not os.path.exists(path):
             return None
 
-        language = {}
+        resource = {}
 
         with open(path) as io:
-            for msgctxt, msgid, msgstr in re.finditer(r'msgctxt "#(\d+)"\nmsgid "([^"]+)"\nmsgstr "([^"]*)"', io.read()):
-                language[int(msgctxt)] = msgstr if msgstr else msgid
+            for msgctxt, msgid, msgstr in re.finditer('msgctxt "#(\\d+)"\nmsgid "([^"]+)"\nmsgstr "([^"]*)"', io.read()):
+                resource[int(msgctxt)] = msgstr if msgstr else msgid
 
-        return language
+        return resource
 
 
 class Dialog(xbmcgui.Dialog):
@@ -531,7 +531,7 @@ class Plugin(object):
         path = []
 
         for segment in segments:
-            match = re.match(r'^{(?:(\w+?)(?::(\w+?))?)?(?::re\("(.+?)"\))?}$', segment)
+            match = re.match('^{(?:(\\w+?)(?::(\\w+?))?)?(?::re\\("(.+?)"\\))?}$', segment)
 
             if match:
                 name, converter, constraint = match.groups()
