@@ -41,60 +41,6 @@ if sys.version_info.major == 2:
     xbmcvfs.translatePath = xbmc.translatePath
 
 
-class Addon(xbmcaddon.Addon):
-    """
-    Offers classes and functions that manipulate the add-on settings, information and localization.
-    """
-
-    def getAddonId(self):
-        """
-        Returns the addon id.
-
-        :return: Addon id.
-        :rtype: str
-        """
-        return self.getAddonInfo('id')
-
-    def getAddonPath(self):
-        """
-        Returns the addon path.
-
-        :return: Addon path.
-        :rtype: str
-        """
-        return xbmcvfs.translatePath(self.getAddonInfo('path'))
-
-    def getAddonProfilePath(self):
-        """
-        Returns the addon profile path.
-
-        :return: Addon profile path.
-        :rtype: str
-        """
-        return xbmcvfs.translatePath(self.getAddonInfo('profile'))
-
-    def getLanguageResource(self, id):
-        """
-        Returns the addon language resource.
-
-        :param id: Country code.
-        :type id: str
-        :rtype: dict[int, str]
-        """
-        path = os.path.join(self.getAddonPath(), 'resources/language/resource.language.{}/strings.po'.format(id))
-
-        if not os.path.exists(path):
-            return None
-
-        resource = {}
-
-        with open(path) as io:
-            for msgctxt, msgid, msgstr in re.finditer('msgctxt "#(\\d+)"\nmsgid "([^"]+)"\nmsgstr "([^"]*)"', io.read()):
-                resource[int(msgctxt)] = msgstr if msgstr else msgid
-
-        return resource
-
-
 class Dialog(xbmcgui.Dialog):
     """
     The graphical control element dialog box (also called dialogue box or just dialog) is a small window that communicates information to the user and prompts
@@ -679,6 +625,59 @@ class SortMethod(enum.IntEnum):
     VIDEO_YEAR = xbmcplugin.SORT_METHOD_VIDEO_YEAR
 
 
+def getAddonId():
+    """
+    Returns the addon id.
+
+    :return: Addon id.
+    :rtype: str
+    """
+    return Addon.getAddonInfo('id')
+
+
+def getAddonPath():
+    """
+    Returns the addon path.
+
+    :return: Addon path.
+    :rtype: str
+    """
+    return xbmcvfs.translatePath(Addon.getAddonInfo('path'))
+
+
+def getAddonProfilePath():
+    """
+    Returns the addon profile path.
+
+    :return: Addon profile path.
+    :rtype: str
+    """
+    return xbmcvfs.translatePath(Addon.getAddonInfo('profile'))
+
+
+def getLanguageResource(id):
+    """
+    Returns the addon language resource.
+
+    :param id: Country code.
+    :type id: str
+    :rtype: dict[int, str]
+    """
+    path = os.path.join(getAddonPath(), 'resources/language/resource.language.{}/strings.po'.format(id))
+
+    if not os.path.exists(path):
+        return None
+
+    resource = {}
+
+    with open(path) as io:
+        for msgctxt, msgid, msgstr in re.finditer('msgctxt "#(\\d+)"\nmsgid "([^"]+)"\nmsgstr "([^"]*)"', io.read()):
+            resource[int(msgctxt)] = msgstr if msgstr else msgid
+
+    return resource
+
+
+Addon = xbmcaddon.Addon()
 Keyboard = xbmc.Keyboard
 executebuiltin = xbmc.executebuiltin
 sleep = xbmc.sleep
