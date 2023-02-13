@@ -67,8 +67,8 @@ class Dialog(xbmcgui.Dialog):
         selectedItems = {key: [] for key in options.keys()}
 
         class MultiSelectTabDialog(xbmcgui.WindowXMLDialog):
-            def __init__(self, xmlFilename, scriptPath, defaultSkin='Default', defaultRes='720p', isMedia=False):
-                super(MultiSelectTabDialog, self).__init__(xmlFilename, scriptPath, defaultSkin, defaultRes, isMedia)
+            def __init__(self, xmlFilename, scriptPath, defaultSkin='Default', defaultRes='720p'):
+                super(MultiSelectTabDialog, self).__init__(xmlFilename, scriptPath, defaultSkin, defaultRes)
                 self.selectedLabel = None
 
             def onInit(self):
