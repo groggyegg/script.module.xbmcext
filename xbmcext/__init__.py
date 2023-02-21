@@ -655,6 +655,16 @@ def getAddonProfilePath():
     return xbmcvfs.translatePath(Addon.getAddonInfo('profile'))
 
 
+def getLanguage():
+    """
+    Get the active language.
+
+    :return: The active language as a string.
+    :rtype: str
+    """
+    return xbmc.getLanguage(xbmc.ISO_639_1)
+
+
 def getLanguageResource(id):
     """
     Returns the addon language resource.
