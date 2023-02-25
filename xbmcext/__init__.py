@@ -29,7 +29,7 @@ import os
 import re
 import sys
 
-import six.moves.urllib.parse as six
+import six
 import xbmc
 import xbmcaddon
 import xbmcgui
@@ -338,10 +338,10 @@ class Plugin(object):
         }
         self.handle = int(sys.argv[1]) if handle is None else handle
         self.routes = []
-        self.scheme, self.netloc, path, params, query, fragment = six.urlparse(sys.argv[0] + sys.argv[2] if url is None else url)
+        self.scheme, self.netloc, path, params, query, fragment = urlparse(sys.argv[0] + sys.argv[2] if url is None else url)
         path = path.rstrip('/')
         self.path = path if path else '/'
-        self.query = {name: json.loads(value) for name, value in six.parse_qsl(query)}
+        self.query = {name: json.loads(value) for name, value in parse_qsl(query)}
 
     def __call__(self):
         """
@@ -407,7 +407,7 @@ class Plugin(object):
         :return: A relative URL.
         :rtype: str
         """
-        return six.urlunsplit(('', '', self.path, six.urlencode(self.query), ''))
+        return urlunsplit(('', '', self.path, urlencode(self.query), ''))
 
     def getSerializedFullPath(self):
         """
@@ -416,7 +416,7 @@ class Plugin(object):
         :return: A relative URL.
         :rtype: str
         """
-        return six.urlunsplit(('', '', self.path, six.urlencode({name: json.dumps(value) for name, value in self.query.items()}), ''))
+        return urlunsplit(('', '', self.path, urlencode({name: json.dumps(value) for name, value in self.query.items()}), ''))
 
     def getSerializedUrlFor(self, path, **query):
         """
@@ -429,9 +429,9 @@ class Plugin(object):
         :return: An absolute URL.
         :rtype: str
         """
-        scheme, netloc, path, params, querystring, fragment = six.urlparse(path)
-        query.update(six.parse_qsl(querystring))
-        return six.urlunsplit((self.scheme, self.netloc, path, six.urlencode({name: json.dumps(value) for name, value in query.items()}), ''))
+        scheme, netloc, path, params, querystring, fragment = urlparse(path)
+        query.update(parse_qsl(querystring))
+        return urlunsplit((self.scheme, self.netloc, path, urlencode({name: json.dumps(value) for name, value in query.items()}), ''))
 
     def getUrlFor(self, path, **query):
         """
@@ -444,9 +444,9 @@ class Plugin(object):
         :return: An absolute URL.
         :rtype: str
         """
-        scheme, netloc, path, params, querystring, fragment = six.urlparse(path)
-        query.update(six.parse_qsl(querystring))
-        return six.urlunsplit((self.scheme, self.netloc, path, six.urlencode(query), ''))
+        scheme, netloc, path, params, querystring, fragment = urlparse(path)
+        query.update(parse_qsl(querystring))
+        return urlunsplit((self.scheme, self.netloc, path, urlencode(query), ''))
 
     def redirect(self, path, **query):
         """
@@ -692,4 +692,8 @@ Keyboard = xbmc.Keyboard
 executebuiltin = xbmc.executebuiltin
 getLocalizedString = Addon.getLocalizedString
 getSettingString = Addon.getSettingString
+parse_qsl = six.moves.urllib.parse.parse_qsl
 sleep = xbmc.sleep
+urlencode = six.moves.urllib.parse.urlencode
+urlparse = six.moves.urllib.parse.urlparse
+urlunsplit = six.moves.urllib.parse.urlunsplit
