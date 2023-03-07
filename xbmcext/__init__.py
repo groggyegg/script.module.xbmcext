@@ -330,10 +330,10 @@ class Plugin(object):
         :type url: str | None
         """
         self.converters = {
-            'atoi': lambda string: int(re.search('\\d+', string).group()),
             'bool': bool,
             'float': float,
             'int': int,
+            'json': json.loads,
             'str': str
         }
         self.handle = int(sys.argv[1]) if handle is None else handle
