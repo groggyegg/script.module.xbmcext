@@ -47,16 +47,16 @@ class Dialog(xbmcgui.Dialog):
     them for a response.
     """
 
-    def multiselectfiltertab(self, heading, options):
+    def multiselecttabsearch(self, heading, options):
         """
-        Show a multi-select tab dialog.
+        Show a multi-select tab search dialog.
 
         :param heading: Dialog heading.
         :type heading: str
         :param options: Options to choose from.
         :type options: dict[str, list[str]]
-        :return: Returns the selected items, or None if cancelled.
-        :rtype: dict[str, list[str]] | None
+        :return: Returns the search text and selected items, or None if cancelled.
+        :rtype: tuple[str | None, dict[str, list[str]] | None]
         """
         DIALOG_TITLE = 1100
         DIALOG_CONTENT = 1110
