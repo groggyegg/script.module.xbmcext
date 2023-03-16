@@ -47,6 +47,90 @@ class Dialog(xbmcgui.Dialog):
     them for a response.
     """
 
+    def multiselectfiltertab(self, heading, options):
+        """
+        Show a multi-select tab dialog.
+
+        :param heading: Dialog heading.
+        :type heading: str
+        :param options: Options to choose from.
+        :type options: dict[str, list[str]]
+        :return: Returns the selected items, or None if cancelled.
+        :rtype: dict[str, list[str]] | None
+        """
+        DIALOG_TITLE = 1100
+        DIALOG_CONTENT = 1110
+        DIALOG_SUBCONTENT = 1120
+        DIALOG_OK_BUTTON = 1131
+        DIALOG_CLEAR_BUTTON = 1132
+        DIALOG_INPUT = 1140
+
+        selectedItems = {key: [] for key in options.keys()}
+
+        class MultiSelectTabSearchDialog(xbmcgui.WindowXMLDialog):
+            def __init__(self, xmlFilename, scriptPath, defaultSkin='Default', defaultRes='720p'):
+                super(MultiSelectTabSearchDialog, self).__init__(xmlFilename, scriptPath, defaultSkin, defaultRes)
+                self.searchText = None
+                self.selectedLabel = None
+
+            def onInit(self):
+                self.getControl(DIALOG_TITLE).setLabel(heading)
+                self.getControl(DIALOG_CONTENT).addItems(list(options.keys()))
+                self.setFocusId(DIALOG_INPUT)
+
+            def onAction(self, action):
+                if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_STOP, xbmcgui.ACTION_NAV_BACK):
+                    selectedItems.clear()
+                    self.close()
+                elif action.getId() in (xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
+                    self.onSelectedItemChanged(self.getFocusId())
+
+            def onClick(self, controlId):
+                if controlId == DIALOG_SUBCONTENT:
+                    control = self.getControl(DIALOG_SUBCONTENT)
+                    selectedItemLabel = options[self.selectedLabel][control.getSelectedPosition()]
+
+                    if selectedItemLabel in selectedItems[self.selectedLabel]:
+                        control.getSelectedItem().setLabel(selectedItemLabel)
+                        selectedItems[self.selectedLabel].remove(selectedItemLabel)
+                    else:
+                        control.getSelectedItem().setLabel('[COLOR orange]{}[/COLOR]'.format(selectedItemLabel))
+                        selectedItems[self.selectedLabel].append(selectedItemLabel)
+                elif controlId == DIALOG_OK_BUTTON:
+                    self.searchText = self.getControl(DIALOG_INPUT).getText()
+                    self.close()
+                elif controlId == DIALOG_CLEAR_BUTTON:
+                    for item in selectedItems.values():
+                        item.clear()
+
+                    control = self.getControl(DIALOG_SUBCONTENT)
+                    selectedList = options[self.selectedLabel]
+
+                    for index in range(len(selectedList)):
+                        control.getListItem(index).setLabel(selectedList[index])
+
+                    self.getControl(DIALOG_INPUT).setText('')
+
+            def onFocus(self, controlId):
+                self.onSelectedItemChanged(controlId)
+
+            def onSelectedItemChanged(self, controlId):
+                if controlId == DIALOG_CONTENT:
+                    selectedLabel = self.getControl(DIALOG_CONTENT).getSelectedItem().getLabel()
+
+                    if self.selectedLabel != selectedLabel:
+                        self.selectedLabel = selectedLabel
+                        control = self.getControl(DIALOG_SUBCONTENT)
+                        control.reset()
+                        control.addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item in selectedItems[self.selectedLabel] else item
+                                          for item in options[self.selectedLabel]])
+
+        dialog = MultiSelectTabSearchDialog('MultiSelectTabSearchDialog.xml', os.path.dirname(os.path.dirname(__file__)), defaultRes='1080i')
+        dialog.doModal()
+        searchText = dialog.searchText
+        del dialog
+        return searchText, selectedItems if selectedItems else None
+
     def multiselecttab(self, heading, options):
         """
         Show a multi-select tab dialog.
