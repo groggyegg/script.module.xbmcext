@@ -54,7 +54,7 @@ class Dialog(xbmcgui.Dialog):
         :param heading: Dialog heading.
         :type heading: str
         :param options: Options to choose from.
-        :type options: dict[str, list[str]]
+        :type options: dict[str | tuple[str], list[str | tuple[str]]]
         :return: Returns the search text and selected items, or None if cancelled.
         :rtype: tuple[str | None, dict[str, list[str]] | None]
         """
@@ -65,7 +65,20 @@ class Dialog(xbmcgui.Dialog):
         DIALOG_CLEAR_BUTTON = 1132
         DIALOG_INPUT = 1140
 
-        selectedItems = {key: [] for key in options.keys()}
+        keys = {}
+        values = {}
+
+        for key, option in options.items():
+            if isinstance(key, tuple):
+                key, id = key
+                keys[key] = id
+            else:
+                keys[key] = key
+
+            values[key] = dict(value if isinstance(value, tuple) else (value, value) for value in option)
+
+        items = {key: list(values[key].keys()) for key in keys}
+        selectedItems = {key: [] for key in items.keys()}
 
         class MultiSelectTabSearchDialog(xbmcgui.WindowXMLDialog):
             def __init__(self, xmlFilename, scriptPath, defaultSkin='Default', defaultRes='720p'):
@@ -75,7 +88,7 @@ class Dialog(xbmcgui.Dialog):
 
             def onInit(self):
                 self.getControl(DIALOG_TITLE).setLabel(heading)
-                self.getControl(DIALOG_CONTENT).addItems(list(options.keys()))
+                self.getControl(DIALOG_CONTENT).addItems(list(items.keys()))
                 self.setFocusId(DIALOG_INPUT)
 
             def onAction(self, action):
@@ -88,7 +101,7 @@ class Dialog(xbmcgui.Dialog):
             def onClick(self, controlId):
                 if controlId == DIALOG_SUBCONTENT:
                     control = self.getControl(DIALOG_SUBCONTENT)
-                    selectedItemLabel = options[self.selectedLabel][control.getSelectedPosition()]
+                    selectedItemLabel = items[self.selectedLabel][control.getSelectedPosition()]
 
                     if selectedItemLabel in selectedItems[self.selectedLabel]:
                         control.getSelectedItem().setLabel(selectedItemLabel)
@@ -104,7 +117,7 @@ class Dialog(xbmcgui.Dialog):
                         item.clear()
 
                     control = self.getControl(DIALOG_SUBCONTENT)
-                    selectedList = options[self.selectedLabel]
+                    selectedList = items[self.selectedLabel]
 
                     for index in range(len(selectedList)):
                         control.getListItem(index).setLabel(selectedList[index])
@@ -123,13 +136,13 @@ class Dialog(xbmcgui.Dialog):
                         control = self.getControl(DIALOG_SUBCONTENT)
                         control.reset()
                         control.addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item in selectedItems[self.selectedLabel] else item
-                                          for item in options[self.selectedLabel]])
+                                          for item in items[self.selectedLabel]])
 
         dialog = MultiSelectTabSearchDialog('MultiSelectTabSearchDialog.xml', os.path.dirname(os.path.dirname(__file__)), defaultRes='1080i')
         dialog.doModal()
         searchText = dialog.searchText
         del dialog
-        return searchText, selectedItems if selectedItems else None
+        return searchText, {keys[key]: [values[key][value] for value in item] for key, item in selectedItems.items()} if selectedItems else None
 
     def multiselecttab(self, heading, options):
         """
@@ -138,7 +151,7 @@ class Dialog(xbmcgui.Dialog):
         :param heading: Dialog heading.
         :type heading: str
         :param options: Options to choose from.
-        :type options: dict[str, list[str]]
+        :type options: dict[str | tuple[str], list[str | tuple[str]]]
         :return: Returns the selected items, or None if cancelled.
         :rtype: dict[str, list[str]] | None
         """
@@ -148,7 +161,20 @@ class Dialog(xbmcgui.Dialog):
         DIALOG_OK_BUTTON = 1131
         DIALOG_CLEAR_BUTTON = 1132
 
-        selectedItems = {key: [] for key in options.keys()}
+        keys = {}
+        values = {}
+
+        for key, option in options.items():
+            if isinstance(key, tuple):
+                key, id = key
+                keys[key] = id
+            else:
+                keys[key] = key
+
+            values[key] = dict(value if isinstance(value, tuple) else (value, value) for value in option)
+
+        items = {key: list(values[key].keys()) for key in keys}
+        selectedItems = {key: [] for key in items.keys()}
 
         class MultiSelectTabDialog(xbmcgui.WindowXMLDialog):
             def __init__(self, xmlFilename, scriptPath, defaultSkin='Default', defaultRes='720p'):
@@ -157,7 +183,7 @@ class Dialog(xbmcgui.Dialog):
 
             def onInit(self):
                 self.getControl(DIALOG_TITLE).setLabel(heading)
-                self.getControl(DIALOG_CONTENT).addItems(list(options.keys()))
+                self.getControl(DIALOG_CONTENT).addItems(list(items.keys()))
                 self.setFocusId(DIALOG_CONTENT)
 
             def onAction(self, action):
@@ -170,7 +196,7 @@ class Dialog(xbmcgui.Dialog):
             def onClick(self, controlId):
                 if controlId == DIALOG_SUBCONTENT:
                     control = self.getControl(DIALOG_SUBCONTENT)
-                    selectedItemLabel = options[self.selectedLabel][control.getSelectedPosition()]
+                    selectedItemLabel = items[self.selectedLabel][control.getSelectedPosition()]
 
                     if selectedItemLabel in selectedItems[self.selectedLabel]:
                         control.getSelectedItem().setLabel(selectedItemLabel)
@@ -185,7 +211,7 @@ class Dialog(xbmcgui.Dialog):
                         item.clear()
 
                     control = self.getControl(DIALOG_SUBCONTENT)
-                    selectedList = options[self.selectedLabel]
+                    selectedList = items[self.selectedLabel]
 
                     for index in range(len(selectedList)):
                         control.getListItem(index).setLabel(selectedList[index])
@@ -202,12 +228,12 @@ class Dialog(xbmcgui.Dialog):
                         control = self.getControl(DIALOG_SUBCONTENT)
                         control.reset()
                         control.addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item in selectedItems[self.selectedLabel] else item
-                                          for item in options[self.selectedLabel]])
+                                          for item in items[self.selectedLabel]])
 
         dialog = MultiSelectTabDialog('MultiSelectTabDialog.xml', os.path.dirname(os.path.dirname(__file__)), defaultRes='1080i')
         dialog.doModal()
         del dialog
-        return selectedItems if selectedItems else None
+        return {keys[key]: [values[key][value] for value in item] for key, item in selectedItems.items()} if selectedItems else None
 
     def selecttab(self, heading, options, preselect=None):
         """
@@ -216,7 +242,7 @@ class Dialog(xbmcgui.Dialog):
         :param heading: Dialog heading.
         :type heading: str
         :param options: Options to choose from.
-        :type options: dict[str | tuple, list[str | tuple]]
+        :type options: dict[str | tuple[str], list[str | tuple[str]]]
         :param preselect: Items to preselect in list.
         :type preselect: dict[str, str] | None
         :return: Returns the selected items, or None if cancelled.
@@ -231,10 +257,20 @@ class Dialog(xbmcgui.Dialog):
         if preselect is None:
             preselect = {}
 
-        keys = dict(key if isinstance(key, tuple) else (key, key) for key in options.keys())
-        values = {key: dict(value if isinstance(value, tuple) else (value, value) for value in options[(key, keys[key])]) for key in keys}
+        keys = {}
+        values = {}
+
+        for key, option in options.items():
+            if isinstance(key, tuple):
+                key, id = key
+                keys[key] = id
+            else:
+                keys[key] = key
+
+            values[key] = dict(value if isinstance(value, tuple) else (value, value) for value in option)
+
         items = {key: list(values[key].keys()) for key in keys}
-        selectedItems = dict(preselect.items())
+        selectedItems = dict(preselect)
 
         class SelectTabDialog(xbmcgui.WindowXMLDialog):
             def __init__(self, xmlFilename, scriptPath, defaultSkin='Default', defaultRes='720p'):
