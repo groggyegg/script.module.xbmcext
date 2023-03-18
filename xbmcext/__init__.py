@@ -82,7 +82,7 @@ class Dialog(xbmcgui.Dialog):
                 if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_STOP, xbmcgui.ACTION_NAV_BACK):
                     selectedItems.clear()
                     self.close()
-                elif action.getId() in (xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
+                elif action.getId() in (xbmcgui.ACTION_MOUSE_MOVE, xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
                     self.onSelectedItemChanged(self.getFocusId())
 
             def onClick(self, controlId):
@@ -164,7 +164,7 @@ class Dialog(xbmcgui.Dialog):
                 if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_STOP, xbmcgui.ACTION_NAV_BACK):
                     selectedItems.clear()
                     self.close()
-                elif action.getId() in (xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
+                elif action.getId() in (xbmcgui.ACTION_MOUSE_MOVE, xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
                     self.onSelectedItemChanged(self.getFocusId())
 
             def onClick(self, controlId):
@@ -216,8 +216,8 @@ class Dialog(xbmcgui.Dialog):
         :param heading: Dialog heading.
         :type heading: str
         :param options: Options to choose from.
-        :type options: dict[str, list[str]]
-        :param preselect: Indexes of items to preselect in list.
+        :type options: dict[str | tuple, list[str | tuple]]
+        :param preselect: Items to preselect in list.
         :type preselect: dict[str, str] | None
         :return: Returns the selected items, or None if cancelled.
         :rtype: dict[str, str] | None
@@ -231,7 +231,10 @@ class Dialog(xbmcgui.Dialog):
         if preselect is None:
             preselect = {}
 
-        selectedItems = dict(preselect)
+        keys = dict(key if isinstance(key, tuple) else (key, key) for key in options.keys())
+        values = {key: dict(value if isinstance(value, tuple) else (value, value) for value in options[(key, keys[key])]) for key in keys}
+        items = {key: list(values[key].keys()) for key in keys}
+        selectedItems = dict(preselect.items())
 
         class SelectTabDialog(xbmcgui.WindowXMLDialog):
             def __init__(self, xmlFilename, scriptPath, defaultSkin='Default', defaultRes='720p'):
@@ -240,15 +243,15 @@ class Dialog(xbmcgui.Dialog):
 
             def onInit(self):
                 self.getControl(DIALOG_TITLE).setLabel(heading)
-                self.getControl(DIALOG_CONTENT).addItems(list(options.keys()))
-                self.getControl(DIALOG_OK_BUTTON).setEnabled(len(selectedItems) == len(options))
+                self.getControl(DIALOG_CONTENT).addItems(list(items.keys()))
+                self.getControl(DIALOG_OK_BUTTON).setEnabled(len(selectedItems) == len(items))
                 self.setFocusId(DIALOG_CONTENT)
 
             def onAction(self, action):
                 if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_STOP, xbmcgui.ACTION_NAV_BACK):
                     selectedItems.clear()
                     self.close()
-                elif action.getId() in (xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
+                elif action.getId() in (xbmcgui.ACTION_MOUSE_MOVE, xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
                     self.onSelectedItemChanged(self.getFocusId())
 
             def onClick(self, controlId):
@@ -259,7 +262,7 @@ class Dialog(xbmcgui.Dialog):
                 elif controlId == DIALOG_CLEAR_BUTTON:
                     selectedItems.clear()
                     selectedItems.update(preselect)
-                    selectedItemIndex = options[self.selectedLabel].index(selectedItems[self.selectedLabel]) if self.selectedLabel in selectedItems else -1
+                    selectedItemIndex = items[self.selectedLabel].index(selectedItems[self.selectedLabel]) if self.selectedLabel in selectedItems else -1
                     self.onListItemClick(selectedItemIndex)
 
             def onFocus(self, controlId):
@@ -267,7 +270,7 @@ class Dialog(xbmcgui.Dialog):
 
             def onListItemClick(self, selectedItemIndex):
                 control = self.getControl(DIALOG_SUBCONTENT)
-                selectedList = options[self.selectedLabel]
+                selectedList = items[self.selectedLabel]
 
                 for index in range(len(selectedList)):
                     label = selectedList[index]
@@ -278,7 +281,7 @@ class Dialog(xbmcgui.Dialog):
                     else:
                         control.getListItem(index).setLabel(label)
 
-                self.getControl(DIALOG_OK_BUTTON).setEnabled(len(selectedItems) == len(options))
+                self.getControl(DIALOG_OK_BUTTON).setEnabled(len(selectedItems) == len(items))
 
             def onSelectedItemChanged(self, controlId):
                 if controlId == DIALOG_CONTENT:
@@ -289,12 +292,12 @@ class Dialog(xbmcgui.Dialog):
                         control = self.getControl(DIALOG_SUBCONTENT)
                         control.reset()
                         control.addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item == selectedItems[self.selectedLabel] else item
-                                          for item in options[self.selectedLabel]])
+                                          for item in items[self.selectedLabel]])
 
         dialog = SelectTabDialog('MultiSelectTabDialog.xml', os.path.dirname(os.path.dirname(__file__)), defaultRes='1080i')
         dialog.doModal()
         del dialog
-        return selectedItems if selectedItems else None
+        return {keys[key]: values[key][value] for key, value in selectedItems.items()} if selectedItems else None
 
 
 class ListItem(xbmcgui.ListItem):
@@ -747,28 +750,6 @@ def getLanguage():
     :rtype: str
     """
     return xbmc.getLanguage(xbmc.ISO_639_1)
-
-
-def getLanguageResource(id):
-    """
-    Returns the addon language resource.
-
-    :param id: Country code.
-    :type id: str
-    :rtype: dict[int, str]
-    """
-    path = os.path.join(getAddonPath(), 'resources/language/resource.language.{}/strings.po'.format(id))
-
-    if not os.path.exists(path):
-        return None
-
-    resource = {}
-
-    with open(path) as io:
-        for msgctxt, msgid, msgstr in re.finditer('msgctxt "#(\\d+)"\nmsgid "([^"]+)"\nmsgstr "([^"]*)"', io.read()):
-            resource[int(msgctxt)] = msgstr if msgstr else msgid
-
-    return resource
 
 
 Addon = xbmcaddon.Addon()
