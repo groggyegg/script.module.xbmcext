@@ -29,7 +29,7 @@ import os
 import re
 import sys
 
-import six.moves.urllib.parse as six
+import six
 import xbmc
 import xbmcaddon
 import xbmcgui
@@ -47,6 +47,103 @@ class Dialog(xbmcgui.Dialog):
     them for a response.
     """
 
+    def multiselecttabsearch(self, heading, options):
+        """
+        Show a multi-select tab search dialog.
+
+        :param heading: Dialog heading.
+        :type heading: str
+        :param options: Options to choose from.
+        :type options: dict[str | tuple[str], list[str | tuple[str]]]
+        :return: Returns the search text and selected items, or None if cancelled.
+        :rtype: tuple[str | None, dict[str, list[str]] | None]
+        """
+        DIALOG_TITLE = 1100
+        DIALOG_CONTENT = 1110
+        DIALOG_SUBCONTENT = 1120
+        DIALOG_OK_BUTTON = 1131
+        DIALOG_CLEAR_BUTTON = 1132
+        DIALOG_INPUT = 1140
+
+        keys = {}
+        values = {}
+
+        for key, option in options.items():
+            if isinstance(key, tuple):
+                key, id = key
+                keys[key] = id
+            else:
+                keys[key] = key
+
+            values[key] = dict(value if isinstance(value, tuple) else (value, value) for value in option)
+
+        items = {key: list(values[key].keys()) for key in keys}
+        selectedItems = {key: [] for key in items.keys()}
+
+        class MultiSelectTabSearchDialog(xbmcgui.WindowXMLDialog):
+            def __init__(self, xmlFilename, scriptPath, defaultSkin='Default', defaultRes='720p'):
+                super(MultiSelectTabSearchDialog, self).__init__(xmlFilename, scriptPath, defaultSkin, defaultRes)
+                self.searchText = None
+                self.selectedLabel = None
+
+            def onInit(self):
+                self.getControl(DIALOG_TITLE).setLabel(heading)
+                self.getControl(DIALOG_CONTENT).addItems(list(items.keys()))
+                self.setFocusId(DIALOG_INPUT)
+
+            def onAction(self, action):
+                if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_STOP, xbmcgui.ACTION_NAV_BACK):
+                    selectedItems.clear()
+                    self.close()
+                elif action.getId() in (xbmcgui.ACTION_MOUSE_MOVE, xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
+                    self.onSelectedItemChanged(self.getFocusId())
+
+            def onClick(self, controlId):
+                if controlId == DIALOG_SUBCONTENT:
+                    control = self.getControl(DIALOG_SUBCONTENT)
+                    selectedItemLabel = items[self.selectedLabel][control.getSelectedPosition()]
+
+                    if selectedItemLabel in selectedItems[self.selectedLabel]:
+                        control.getSelectedItem().setLabel(selectedItemLabel)
+                        selectedItems[self.selectedLabel].remove(selectedItemLabel)
+                    else:
+                        control.getSelectedItem().setLabel('[COLOR orange]{}[/COLOR]'.format(selectedItemLabel))
+                        selectedItems[self.selectedLabel].append(selectedItemLabel)
+                elif controlId == DIALOG_OK_BUTTON:
+                    self.searchText = self.getControl(DIALOG_INPUT).getText()
+                    self.close()
+                elif controlId == DIALOG_CLEAR_BUTTON:
+                    for item in selectedItems.values():
+                        item.clear()
+
+                    control = self.getControl(DIALOG_SUBCONTENT)
+                    selectedList = items[self.selectedLabel]
+
+                    for index in range(len(selectedList)):
+                        control.getListItem(index).setLabel(selectedList[index])
+
+                    self.getControl(DIALOG_INPUT).setText('')
+
+            def onFocus(self, controlId):
+                self.onSelectedItemChanged(controlId)
+
+            def onSelectedItemChanged(self, controlId):
+                if controlId == DIALOG_CONTENT:
+                    selectedLabel = self.getControl(DIALOG_CONTENT).getSelectedItem().getLabel()
+
+                    if self.selectedLabel != selectedLabel:
+                        self.selectedLabel = selectedLabel
+                        control = self.getControl(DIALOG_SUBCONTENT)
+                        control.reset()
+                        control.addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item in selectedItems[self.selectedLabel] else item
+                                          for item in items[self.selectedLabel]])
+
+        dialog = MultiSelectTabSearchDialog('MultiSelectTabSearchDialog.xml', os.path.dirname(os.path.dirname(__file__)), defaultRes='1080i')
+        dialog.doModal()
+        searchText = dialog.searchText
+        del dialog
+        return searchText, {keys[key]: [values[key][value] for value in item] for key, item in selectedItems.items()} if selectedItems else None
+
     def multiselecttab(self, heading, options):
         """
         Show a multi-select tab dialog.
@@ -54,7 +151,7 @@ class Dialog(xbmcgui.Dialog):
         :param heading: Dialog heading.
         :type heading: str
         :param options: Options to choose from.
-        :type options: dict[str, list[str]]
+        :type options: dict[str | tuple[str], list[str | tuple[str]]]
         :return: Returns the selected items, or None if cancelled.
         :rtype: dict[str, list[str]] | None
         """
@@ -64,62 +161,179 @@ class Dialog(xbmcgui.Dialog):
         DIALOG_OK_BUTTON = 1131
         DIALOG_CLEAR_BUTTON = 1132
 
-        selectedItems = {key: [] for key in options.keys()}
+        keys = {}
+        values = {}
+
+        for key, option in options.items():
+            if isinstance(key, tuple):
+                key, id = key
+                keys[key] = id
+            else:
+                keys[key] = key
+
+            values[key] = dict(value if isinstance(value, tuple) else (value, value) for value in option)
+
+        items = {key: list(values[key].keys()) for key in keys}
+        selectedItems = {key: [] for key in items.keys()}
 
         class MultiSelectTabDialog(xbmcgui.WindowXMLDialog):
-            def __init__(self, xmlFilename, scriptPath, defaultSkin='Default', defaultRes='720p', isMedia=False):
-                super(MultiSelectTabDialog, self).__init__(xmlFilename, scriptPath, defaultSkin, defaultRes, isMedia)
+            def __init__(self, xmlFilename, scriptPath, defaultSkin='Default', defaultRes='720p'):
+                super(MultiSelectTabDialog, self).__init__(xmlFilename, scriptPath, defaultSkin, defaultRes)
                 self.selectedLabel = None
 
             def onInit(self):
                 self.getControl(DIALOG_TITLE).setLabel(heading)
-                self.getControl(DIALOG_CONTENT).addItems(list(options.keys()))
+                self.getControl(DIALOG_CONTENT).addItems(list(items.keys()))
                 self.setFocusId(DIALOG_CONTENT)
 
             def onAction(self, action):
                 if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_STOP, xbmcgui.ACTION_NAV_BACK):
                     selectedItems.clear()
                     self.close()
-                elif action.getId() in (xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
+                elif action.getId() in (xbmcgui.ACTION_MOUSE_MOVE, xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
                     self.onSelectedItemChanged(self.getFocusId())
 
             def onClick(self, controlId):
                 if controlId == DIALOG_SUBCONTENT:
-                    control = self.getControl(controlId)
-                    selectedItemLabel = options[self.selectedLabel][control.getSelectedPosition()]
+                    control = self.getControl(DIALOG_SUBCONTENT)
+                    selectedItemLabel = items[self.selectedLabel][control.getSelectedPosition()]
 
                     if selectedItemLabel in selectedItems[self.selectedLabel]:
                         control.getSelectedItem().setLabel(selectedItemLabel)
                         selectedItems[self.selectedLabel].remove(selectedItemLabel)
                     else:
-                        selectedItems[self.selectedLabel].append(selectedItemLabel)
                         control.getSelectedItem().setLabel('[COLOR orange]{}[/COLOR]'.format(selectedItemLabel))
+                        selectedItems[self.selectedLabel].append(selectedItemLabel)
                 elif controlId == DIALOG_OK_BUTTON:
                     self.close()
                 elif controlId == DIALOG_CLEAR_BUTTON:
                     for item in selectedItems.values():
                         item.clear()
 
-                    for index in range(len(options[self.selectedLabel])):
-                        self.getControl(DIALOG_SUBCONTENT).getListItem(index).setLabel(options[self.selectedLabel][index])
+                    control = self.getControl(DIALOG_SUBCONTENT)
+                    selectedList = items[self.selectedLabel]
+
+                    for index in range(len(selectedList)):
+                        control.getListItem(index).setLabel(selectedList[index])
 
             def onFocus(self, controlId):
                 self.onSelectedItemChanged(controlId)
 
             def onSelectedItemChanged(self, controlId):
                 if controlId == DIALOG_CONTENT:
-                    selectedLabel = self.getControl(controlId).getSelectedItem().getLabel()
+                    selectedLabel = self.getControl(DIALOG_CONTENT).getSelectedItem().getLabel()
 
                     if self.selectedLabel != selectedLabel:
                         self.selectedLabel = selectedLabel
-                        self.getControl(DIALOG_SUBCONTENT).reset()
-                        self.getControl(DIALOG_SUBCONTENT).addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item in selectedItems[self.selectedLabel]
-                                                                     else item for item in options[self.selectedLabel]])
+                        control = self.getControl(DIALOG_SUBCONTENT)
+                        control.reset()
+                        control.addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item in selectedItems[self.selectedLabel] else item
+                                          for item in items[self.selectedLabel]])
 
         dialog = MultiSelectTabDialog('MultiSelectTabDialog.xml', os.path.dirname(os.path.dirname(__file__)), defaultRes='1080i')
         dialog.doModal()
         del dialog
-        return selectedItems if selectedItems else None
+        return {keys[key]: [values[key][value] for value in item] for key, item in selectedItems.items()} if selectedItems else None
+
+    def selecttab(self, heading, options, preselect=None):
+        """
+        Show a select tab dialog.
+
+        :param heading: Dialog heading.
+        :type heading: str
+        :param options: Options to choose from.
+        :type options: dict[str | tuple[str], list[str | tuple[str]]]
+        :param preselect: Items to preselect in list.
+        :type preselect: dict[str, str] | None
+        :return: Returns the selected items, or None if cancelled.
+        :rtype: dict[str, str] | None
+        """
+        DIALOG_TITLE = 1100
+        DIALOG_CONTENT = 1110
+        DIALOG_SUBCONTENT = 1120
+        DIALOG_OK_BUTTON = 1131
+        DIALOG_CLEAR_BUTTON = 1132
+
+        if preselect is None:
+            preselect = {}
+
+        keys = {}
+        values = {}
+
+        for key, option in options.items():
+            if isinstance(key, tuple):
+                key, id = key
+                keys[key] = id
+            else:
+                keys[key] = key
+
+            values[key] = dict(value if isinstance(value, tuple) else (value, value) for value in option)
+
+        items = {key: list(values[key].keys()) for key in keys}
+        selectedItems = dict(preselect)
+
+        class SelectTabDialog(xbmcgui.WindowXMLDialog):
+            def __init__(self, xmlFilename, scriptPath, defaultSkin='Default', defaultRes='720p'):
+                super(SelectTabDialog, self).__init__(xmlFilename, scriptPath, defaultSkin, defaultRes)
+                self.selectedLabel = None
+
+            def onInit(self):
+                self.getControl(DIALOG_TITLE).setLabel(heading)
+                self.getControl(DIALOG_CONTENT).addItems(list(items.keys()))
+                self.getControl(DIALOG_OK_BUTTON).setEnabled(len(selectedItems) == len(items))
+                self.setFocusId(DIALOG_CONTENT)
+
+            def onAction(self, action):
+                if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_STOP, xbmcgui.ACTION_NAV_BACK):
+                    selectedItems.clear()
+                    self.close()
+                elif action.getId() in (xbmcgui.ACTION_MOUSE_MOVE, xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
+                    self.onSelectedItemChanged(self.getFocusId())
+
+            def onClick(self, controlId):
+                if controlId == DIALOG_SUBCONTENT:
+                    self.onListItemClick(self.getControl(DIALOG_SUBCONTENT).getSelectedPosition())
+                elif controlId == DIALOG_OK_BUTTON:
+                    self.close()
+                elif controlId == DIALOG_CLEAR_BUTTON:
+                    selectedItems.clear()
+                    selectedItems.update(preselect)
+                    selectedItemIndex = items[self.selectedLabel].index(selectedItems[self.selectedLabel]) if self.selectedLabel in selectedItems else -1
+                    self.onListItemClick(selectedItemIndex)
+
+            def onFocus(self, controlId):
+                self.onSelectedItemChanged(controlId)
+
+            def onListItemClick(self, selectedItemIndex):
+                control = self.getControl(DIALOG_SUBCONTENT)
+                selectedList = items[self.selectedLabel]
+
+                for index in range(len(selectedList)):
+                    label = selectedList[index]
+
+                    if index == selectedItemIndex:
+                        control.getListItem(index).setLabel('[COLOR orange]{}[/COLOR]'.format(label))
+                        selectedItems[self.selectedLabel] = label
+                    else:
+                        control.getListItem(index).setLabel(label)
+
+                self.getControl(DIALOG_OK_BUTTON).setEnabled(len(selectedItems) == len(items))
+
+            def onSelectedItemChanged(self, controlId):
+                if controlId == DIALOG_CONTENT:
+                    selectedLabel = self.getControl(DIALOG_CONTENT).getSelectedItem().getLabel()
+
+                    if self.selectedLabel != selectedLabel:
+                        self.selectedLabel = selectedLabel
+                        control = self.getControl(DIALOG_SUBCONTENT)
+                        control.reset()
+                        control.addItems(['[COLOR orange]{}[/COLOR]'.format(item) if item == selectedItems[self.selectedLabel] else item
+                                          for item in items[self.selectedLabel]])
+
+        dialog = SelectTabDialog('MultiSelectTabDialog.xml', os.path.dirname(os.path.dirname(__file__)), defaultRes='1080i')
+        dialog.doModal()
+        del dialog
+        return {keys[key]: values[key][value] for key, value in selectedItems.items()} if selectedItems else None
 
 
 class ListItem(xbmcgui.ListItem):
@@ -139,7 +353,7 @@ class ListItem(xbmcgui.ListItem):
         :type posterImage: str
         :param path: The path for the item.
         :type path: str
-        :param offscreen: If GUI based locks should be avoided. Most of the times listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
+        :param offscreen: If GUI based locks should be avoided. Most of the time listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
         :type offscreen: bool
         """
         return super(ListItem, cls).__new__(cls, label, label2, path=path, offscreen=offscreen)
@@ -160,7 +374,7 @@ class ListItem(xbmcgui.ListItem):
         :type posterImage: str
         :param path: The path for the item.
         :type path: str
-        :param offscreen: If GUI based locks should be avoided. Most of the times listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
+        :param offscreen: If GUI based locks should be avoided. Most of the time listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
         :type offscreen: bool
         """
         self.setArt({label: value for label, value in (('thumb', thumbnailImage), ('poster', posterImage), ('icon', iconImage)) if value})
@@ -238,21 +452,19 @@ class Plugin(object):
         :param url: URL of the entry.
         :type url: str | None
         """
-        self.classtypes = {
+        self.converters = {
             'bool': bool,
             'float': float,
             'int': int,
+            'json': json.loads,
             'str': str
-        }
-        self.functions = {
-            're': lambda pattern: pattern
         }
         self.handle = int(sys.argv[1]) if handle is None else handle
         self.routes = []
-        self.scheme, self.netloc, path, params, query, fragment = six.urlparse(sys.argv[0] + sys.argv[2] if url is None else url)
+        self.scheme, self.netloc, path, params, query, fragment = urlparse(sys.argv[0] + sys.argv[2] if url is None else url)
         path = path.rstrip('/')
         self.path = path if path else '/'
-        self.query = {name: json.loads(value) for name, value in six.parse_qsl(query)}
+        self.query = {name: json.loads(value) for name, value in parse_qsl(query)}
 
     def __call__(self):
         """
@@ -260,14 +472,14 @@ class Plugin(object):
         """
         Log.info('[script.module.xbmcext] Routing "{}"'.format(self.getFullPath()))
 
-        for pattern, classtypes, function in self.routes:
+        for pattern, converters, function in self.routes:
             match = re.match('^{}$'.format(pattern), self.path)
 
             if match:
                 kwargs = match.groupdict()
 
-                for name, classtype in classtypes.items():
-                    kwargs[name] = classtype(kwargs[name])
+                for name, converter in converters.items():
+                    kwargs[name] = converter(kwargs[name])
 
                 kwargs.update(self.query)
                 argspec = inspect.getfullargspec(function)
@@ -318,7 +530,7 @@ class Plugin(object):
         :return: A relative URL.
         :rtype: str
         """
-        return six.urlunsplit(('', '', self.path, six.urlencode(self.query), ''))
+        return urlunsplit(('', '', self.path, urlencode(self.query), ''))
 
     def getSerializedFullPath(self):
         """
@@ -327,7 +539,7 @@ class Plugin(object):
         :return: A relative URL.
         :rtype: str
         """
-        return six.urlunsplit(('', '', self.path, six.urlencode({name: json.dumps(value) for name, value in self.query.items()}), ''))
+        return urlunsplit(('', '', self.path, urlencode({name: json.dumps(value) for name, value in self.query.items()}), ''))
 
     def getSerializedUrlFor(self, path, **query):
         """
@@ -340,9 +552,9 @@ class Plugin(object):
         :return: An absolute URL.
         :rtype: str
         """
-        scheme, netloc, path, params, querystring, fragment = six.urlparse(path)
-        query.update(six.parse_qsl(querystring))
-        return six.urlunsplit((self.scheme, self.netloc, path, six.urlencode({name: json.dumps(value) for name, value in query.items()}), ''))
+        scheme, netloc, path, params, querystring, fragment = urlparse(path)
+        query.update(parse_qsl(querystring))
+        return urlunsplit((self.scheme, self.netloc, path, urlencode({name: json.dumps(value) for name, value in query.items()}), ''))
 
     def getUrlFor(self, path, **query):
         """
@@ -355,9 +567,9 @@ class Plugin(object):
         :return: An absolute URL.
         :rtype: str
         """
-        scheme, netloc, path, params, querystring, fragment = six.urlparse(path)
-        query.update(six.parse_qsl(querystring))
-        return six.urlunsplit((self.scheme, self.netloc, path, six.urlencode(query), ''))
+        scheme, netloc, path, params, querystring, fragment = urlparse(path)
+        query.update(parse_qsl(querystring))
+        return urlunsplit((self.scheme, self.netloc, path, urlencode(query), ''))
 
     def redirect(self, path, **query):
         """
@@ -382,20 +594,22 @@ class Plugin(object):
         :return: A decorator to the function.
         :rtype: typing.Callable
         """
-        classtypes = {}
+        converters = {}
         path = path.rstrip('/')
         segments = (path if path else '/').split('/')
         path = []
 
         for segment in segments:
-            match = re.match(r'^{(?:(\w+?)(?::(\w+?))?)?(?::(\w+?\(.+?\)))?}$', segment)
+            match = re.match('^{(?:(\\w+?)(?::(\\w+?))?)?(?::re\\("(.+?)"\\))?}$', segment)
 
             if match:
-                name, classtype, constraint = match.groups()
-                constraint = eval(constraint.replace('\\', '\\\\'), self.functions) if constraint else '[^/]+'
+                name, converter, constraint = match.groups()
+
+                if constraint is None:
+                    constraint = '[^/]+'
 
                 if name:
-                    classtypes[name] = self.classtypes[classtype] if classtype else str
+                    converters[name] = self.converters[converter] if converter else str
                     path.append('(?P<{}>{})'.format(name, constraint))
                 else:
                     path.append(constraint)
@@ -403,7 +617,7 @@ class Plugin(object):
                 path.append(re.escape(segment))
 
         def decorator(function):
-            self.routes.append(('/'.join(path), classtypes, function))
+            self.routes.append(('/'.join(path), converters, function))
             return function
 
         return decorator
@@ -564,9 +778,24 @@ def getAddonProfilePath():
     return xbmcvfs.translatePath(Addon.getAddonInfo('profile'))
 
 
+def getLanguage():
+    """
+    Get the active language.
+
+    :return: The active language as a string.
+    :rtype: str
+    """
+    return xbmc.getLanguage(xbmc.ISO_639_1)
+
+
 Addon = xbmcaddon.Addon()
 Keyboard = xbmc.Keyboard
 executebuiltin = xbmc.executebuiltin
 getLocalizedString = Addon.getLocalizedString
 getSettingString = Addon.getSettingString
+parse_qsl = six.moves.urllib_parse.parse_qsl
 sleep = xbmc.sleep
+urlencode = six.moves.urllib_parse.urlencode
+urljoin = six.moves.urllib_parse.urljoin
+urlparse = six.moves.urllib_parse.urlparse
+urlunsplit = six.moves.urllib_parse.urlunsplit
