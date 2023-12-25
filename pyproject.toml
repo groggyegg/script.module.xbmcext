@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "xbmcext"
-version = "1.4.0"
+version = "1.5.0"
 authors = [{ name = "groggyegg", email = "groggyegg@protonmail.com" }]
 description = "XBMCExt extends utilities, dialogs, and various control widgets."
 readme = "README.md"

@@ -26,6 +26,8 @@ import enum
 import inspect
 import json
 import os
+import pathlib
+import pickle
 import re
 import sys
 
@@ -786,6 +788,27 @@ def getLanguage():
     :rtype: str
     """
     return xbmc.getLanguage(xbmc.ISO_639_1)
+
+
+class ResourceManager(dict):
+    """
+    A resource manager that provides convenient access to resources at run time.
+    """
+
+    def __init__(self):
+        super().__init__()
+        path = os.path.join(getAddonPath(), 'resources/data/resource.resx')
+
+        if os.path.exists(path):
+            with open(path, 'rb') as io:
+                self.update(pickle.load(io))
+
+    def __del__(self):
+        path = pathlib.Path(os.path.join(getAddonPath(), 'resources/data/resource.resx'))
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(path, 'wb') as io:
+            return pickle.dump(self, io)
 
 
 Addon = xbmcaddon.Addon()
