@@ -26,7 +26,6 @@ import enum
 import inspect
 import json
 import os
-import errno
 import pickle
 import re
 import sys
@@ -37,8 +36,6 @@ import xbmcaddon
 import xbmcgui
 import xbmcplugin
 import xbmcvfs
-
-KODIVERSION = int(xbmc.getInfoLabel("System.BuildVersion")[:2])
 
 if sys.version_info.major == 2:
     inspect.getfullargspec = inspect.getargspec
@@ -339,88 +336,53 @@ class Dialog(xbmcgui.Dialog):
         del dialog
         return {keys[key]: values[key][value] for key, value in selectedItems.items()} if selectedItems else None
 
-if KODIVERSION >= 18:
-    class ListItem(xbmcgui.ListItem):
-        def __new__(cls, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=True):
-            """
-            The list item control is used for creating item lists in Kodi.
-    
-            :param label: The label to display on the item.
-            :type label: str
-            :param label2: The label2 of the item.
-            :type label2: str
-            :param iconImage: Image filename.
-            :type iconImage: str
-            :param thumbnailImage: Image filename.
-            :type thumbnailImage: str
-            :param posterImage: Image filename.
-            :type posterImage: str
-            :param path: The path for the item.
-            :type path: str
-            :param offscreen: If GUI based locks should be avoided. Most of the time listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
-            :type offscreen: bool
-            """
+
+class ListItem(xbmcgui.ListItem):
+    def __new__(cls, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=True):
+        """
+        The list item control is used for creating item lists in Kodi.
+
+        :param label: The label to display on the item.
+        :type label: str
+        :param label2: The label2 of the item.
+        :type label2: str
+        :param iconImage: Image filename.
+        :type iconImage: str
+        :param thumbnailImage: Image filename.
+        :type thumbnailImage: str
+        :param posterImage: Image filename.
+        :type posterImage: str
+        :param path: The path for the item.
+        :type path: str
+        :param offscreen: If GUI based locks should be avoided. Most of the time listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
+        :type offscreen: bool
+        """
+        if sys.version_info > (2, 25, 0):
             return super(ListItem, cls).__new__(cls, label, label2, path=path, offscreen=offscreen)
-    
-        def __init__(self, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=True):
-            """
-            The list item control is used for creating item lists in Kodi.
-    
-            :param label: The label to display on the item.
-            :type label: str
-            :param label2: The label2 of the item.
-            :type label2: str
-            :param iconImage: Image filename.
-            :type iconImage: str
-            :param thumbnailImage: Image filename.
-            :type thumbnailImage: str
-            :param posterImage: Image filename.
-            :type posterImage: str
-            :param path: The path for the item.
-            :type path: str
-            :param offscreen: If GUI based locks should be avoided. Most of the time listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
-            :type offscreen: bool
-            """
-            self.setArt({label: value for label, value in (('thumb', thumbnailImage), ('poster', posterImage), ('icon', iconImage)) if value})
-else:
-    class ListItem(xbmcgui.ListItem):
-        def __new__(cls, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path=''):
-            """
-            The list item control is used for creating item lists in Kodi.
-    
-            :param label: The label to display on the item.
-            :type label: str
-            :param label2: The label2 of the item.
-            :type label2: str
-            :param iconImage: Image filename.
-            :type iconImage: str
-            :param thumbnailImage: Image filename.
-            :type thumbnailImage: str
-            :param posterImage: Image filename.
-            :type posterImage: str
-            :param path: The path for the item.
-            :type path: str
-            """
+        else:
             return super(ListItem, cls).__new__(cls, label, label2, path=path)
-    
-        def __init__(self, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path=''):
-            """
-            The list item control is used for creating item lists in Kodi.
-    
-            :param label: The label to display on the item.
-            :type label: str
-            :param label2: The label2 of the item.
-            :type label2: str
-            :param iconImage: Image filename.
-            :type iconImage: str
-            :param thumbnailImage: Image filename.
-            :type thumbnailImage: str
-            :param posterImage: Image filename.
-            :type posterImage: str
-            :param path: The path for the item.
-            :type path: str
-            """
-            self.setArt({label: value for label, value in (('thumb', thumbnailImage), ('poster', posterImage), ('icon', iconImage)) if value})
+
+    def __init__(self, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=True):
+        """
+        The list item control is used for creating item lists in Kodi.
+
+        :param label: The label to display on the item.
+        :type label: str
+        :param label2: The label2 of the item.
+        :type label2: str
+        :param iconImage: Image filename.
+        :type iconImage: str
+        :param thumbnailImage: Image filename.
+        :type thumbnailImage: str
+        :param posterImage: Image filename.
+        :type posterImage: str
+        :param path: The path for the item.
+        :type path: str
+        :param offscreen: If GUI based locks should be avoided. Most of the time listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
+        :type offscreen: bool
+        """
+        self.setArt({label: value for label, value in (('thumb', thumbnailImage), ('poster', posterImage), ('icon', iconImage)) if value})
+
 
 class Log(object):
     """
@@ -774,8 +736,7 @@ class SortMethod(enum.IntEnum):
     PROGRAM_COUNT = xbmcplugin.SORT_METHOD_PROGRAM_COUNT
     SIZE = xbmcplugin.SORT_METHOD_SIZE
     SONG_RATING = xbmcplugin.SORT_METHOD_SONG_RATING
-    if KODIVERSION >= 17:
-        SONG_USER_RATING = xbmcplugin.SORT_METHOD_SONG_USER_RATING
+    SONG_USER_RATING = 30
     STUDIO = xbmcplugin.SORT_METHOD_STUDIO
     STUDIO_IGNORE_THE = xbmcplugin.SORT_METHOD_STUDIO_IGNORE_THE
     TITLE = xbmcplugin.SORT_METHOD_TITLE
@@ -846,12 +807,7 @@ class ResourceManager(dict):
 
     def __del__(self):
         path = os.path.join(getAddonPath(), 'resources/data/resource.resx')
-        pathparent = os.path.join(getAddonPath(), 'resources/data')
-        try:
-            os.makedirs(pathparent)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
+        os.makedirs(os.path.join(getAddonPath(), 'resources/data'), exist_ok=True)
 
         with open(path, 'wb') as io:
             return pickle.dump(self, io)
@@ -861,7 +817,7 @@ Addon = xbmcaddon.Addon()
 Keyboard = xbmc.Keyboard
 executebuiltin = xbmc.executebuiltin
 getLocalizedString = Addon.getLocalizedString
-getSettingString = Addon.getSetting
+getSetting = Addon.getSetting
 parse_qsl = six.moves.urllib_parse.parse_qsl
 sleep = xbmc.sleep
 urlencode = six.moves.urllib_parse.urlencode
