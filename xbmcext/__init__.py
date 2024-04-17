@@ -26,7 +26,6 @@ import enum
 import inspect
 import json
 import os
-import pathlib
 import pickle
 import re
 import sys
@@ -358,7 +357,10 @@ class ListItem(xbmcgui.ListItem):
         :param offscreen: If GUI based locks should be avoided. Most of the time listitems are created offscreen and added later to a container for display (e.g. plugins) or they are not even displayed (e.g. python scrapers). In such cases, there is no need to lock the GUI when creating the items (increasing your addon performance).
         :type offscreen: bool
         """
-        return super(ListItem, cls).__new__(cls, label, label2, path=path, offscreen=offscreen)
+        if sys.version_info > (2, 25, 0):
+            return super(ListItem, cls).__new__(cls, label, label2, path=path, offscreen=offscreen)
+        else:
+            return super(ListItem, cls).__new__(cls, label, label2, path=path)
 
     def __init__(self, label='', label2='', iconImage='', thumbnailImage='', posterImage='', path='', offscreen=True):
         """
@@ -734,7 +736,7 @@ class SortMethod(enum.IntEnum):
     PROGRAM_COUNT = xbmcplugin.SORT_METHOD_PROGRAM_COUNT
     SIZE = xbmcplugin.SORT_METHOD_SIZE
     SONG_RATING = xbmcplugin.SORT_METHOD_SONG_RATING
-    SONG_USER_RATING = xbmcplugin.SORT_METHOD_SONG_USER_RATING
+    SONG_USER_RATING = 30
     STUDIO = xbmcplugin.SORT_METHOD_STUDIO
     STUDIO_IGNORE_THE = xbmcplugin.SORT_METHOD_STUDIO_IGNORE_THE
     TITLE = xbmcplugin.SORT_METHOD_TITLE
@@ -796,7 +798,7 @@ class ResourceManager(dict):
     """
 
     def __init__(self):
-        super().__init__()
+        super(ResourceManager, self).__init__()
         path = os.path.join(getAddonPath(), 'resources/data/resource.resx')
 
         if os.path.exists(path):
@@ -804,8 +806,8 @@ class ResourceManager(dict):
                 self.update(pickle.load(io))
 
     def __del__(self):
-        path = pathlib.Path(os.path.join(getAddonPath(), 'resources/data/resource.resx'))
-        path.parent.mkdir(parents=True, exist_ok=True)
+        path = os.path.join(getAddonPath(), 'resources/data/resource.resx')
+        os.makedirs(os.path.join(getAddonPath(), 'resources/data'), exist_ok=True)
 
         with open(path, 'wb') as io:
             return pickle.dump(self, io)
@@ -815,7 +817,7 @@ Addon = xbmcaddon.Addon()
 Keyboard = xbmc.Keyboard
 executebuiltin = xbmc.executebuiltin
 getLocalizedString = Addon.getLocalizedString
-getSettingString = Addon.getSettingString
+getSetting = Addon.getSetting
 parse_qsl = six.moves.urllib_parse.parse_qsl
 sleep = xbmc.sleep
 urlencode = six.moves.urllib_parse.urlencode
