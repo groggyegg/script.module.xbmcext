@@ -820,6 +820,7 @@ getLocalizedString = Addon.getLocalizedString
 getSetting = Addon.getSetting
 parse_qsl = six.moves.urllib_parse.parse_qsl
 sleep = xbmc.sleep
+translatePath = xbmcvfs.translatePath
 urlencode = six.moves.urllib_parse.urlencode
 urljoin = six.moves.urllib_parse.urljoin
 urlparse = six.moves.urllib_parse.urlparse
